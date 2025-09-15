@@ -1,12 +1,14 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:16
-    ports:
-      - "5432:5432"
     environment:
-      - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=odoo
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Esta línea es CLAVE: le dice a Postgres que no cree una base de datos
+      # con el nombre del usuario. Esto fuerza a Odoo a mostrar el asistente.
+      - POSTGRES_DB=postgres
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
     networks:
@@ -22,25 +24,25 @@ services:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
       - ./addons:/mnt/extra-addons
-    # IMPORTANTE la línea "-i base" solo se ejecuta la primera vez para inincializar la base de datos con el módulo base
-    # luego se debe eliminar 
-    # command: odoo -d odoo_db -i base --db_user=odoo --db_password=odoo --db_host=db
-    # IMPORTANTE Si no se quiere inicializar la base de datos con el módulo base, usar la siguiente línea en su lugar:
-    command: odoo -d odoo_db --db_user=odoo --db_password=odoo --db_host=db
+    # MUY IMPORTANTE: NO HAY SECCIÓN "command".
+    # Dejamos que el punto de entrada por defecto de la imagen de Odoo haga su trabajo.
+    env_file:
+      - .env
     networks:
       - odoo_network
+
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     container_name: n8n_app
     environment:
-      N8N_BASIC_AUTH_ACTIVE: true
-      N8N_BASIC_AUTH_USER: admin
-      N8N_BASIC_AUTH_PASSWORD: n8n_admin_2024
-      N8N_HOST: 0.0.0.0
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      WEBHOOK_URL: http://localhost:5678/
-      GENERIC_TIMEZONE: Europe/Madrid
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=n8n_admin_2024
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Madrid
     ports:
       - "5678:5678"
     volumes:
