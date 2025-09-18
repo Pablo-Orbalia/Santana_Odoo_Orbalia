@@ -1,0 +1,12 @@
+{
+    "python.defaultInterpreterPath": "python3",
+    "python.analysis.extraPaths": [
+        "./addons",
+        "/usr/lib/python3/dist-packages",
+        "/usr/lib/python3/dist-packages/odoo/addons"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
+}
