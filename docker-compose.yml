@@ -9,6 +9,8 @@ services:
       # Esta línea es CLAVE: le dice a Postgres que no cree una base de datos
       # con el nombre del usuario. Esto fuerza a Odoo a mostrar el asistente.
       - POSTGRES_DB=postgres
+    ports:
+      - "5430:5432"
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
     networks:
