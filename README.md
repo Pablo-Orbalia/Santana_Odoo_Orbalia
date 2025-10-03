@@ -1,242 +1,228 @@
-# 📖 Copia y Restauración Rápida de Odoo 18 (Docker)
+# 📘 Guía de uso — Snapshots y Restauración de Odoo 18 (Docker)
 
-Este documento explica cómo **guardar una copia exacta** de un estado de Odoo 18 en Docker (base de datos + filestore + addons) y cómo **levantar esa copia** en caso de fallo del contenedor original o en un clon paralelo para pruebas.
+**Scripts incluidos:**  
+- `snapshot_odoo_min.ps1` → Crear snapshot (punto de restauración).  
+- `restore_odoo_min.ps1` → Restaurar snapshot.  
+
+**Entorno:** Windows + PowerShell + Docker Compose.
+
+Este README explica cómo crear un **punto de restauración** (BD + filestore + ficheros del host) y cómo volver a ese punto si algo se rompe. Está pensado para el proyecto ubicado en:
+
+```
+C:\Github\odoo_n8n_docker
+```
+
+con un `docker-compose.yml` que levanta Odoo 18 y PostgreSQL.
 
 ---
 
-## 📂 Archivos a respaldar
+## 0) Requisitos previos
 
-Cada copia debe contener:
-
-- **Dump de la base de datos** (`db_<nombreBD>_YYYYMMDD_HHMM.dump.gz`)  
-- **Filestore de Odoo** (`filestore_<nombreBD>_YYYYMMDD_HHMM.tgz`)  
-- **Carpeta de addons personalizados** (si usas `./addons`)  
-- `docker-compose.yml` y `.env`  
-
-Con estos archivos puedes reconstruir tu Odoo en cualquier momento.
-
----
-
-## 🛠 Script de Backup (Windows PowerShell)
-
-Guarda este script como `backup_odoo.ps1` en tu carpeta de proyecto:
-
-```powershell
-param(
-  [string]$PgDb = "odoo_test2",   # Nombre real de la BD
-  [string]$PgUser = "odoo_test",
-  [string]$PgPass = "odoo_test"
-)
-
-$DbContainer   = "odoo_n8n_docker-db-1"
-$OdooContainer = "odoo_n8n_docker-odoo-1"
-$stamp = Get-Date -Format "yyyyMMdd_HHmm"
-$bkDir = Join-Path (Get-Location) ("backup_odoo18_" + $stamp)
-New-Item -ItemType Directory -Force -Path $bkDir | Out-Null
-
-# 1. Dump BD
-docker exec -e PGPASSWORD=$PgPass $DbContainer pg_dump -U $PgUser -d $PgDb -Fc -f /tmp/$PgDb.dump
-docker exec $DbContainer bash -lc "gzip -9 /tmp/$PgDb.dump"
-docker cp "${DbContainer}:/tmp/$PgDb.dump.gz" "$bkDir\db_${PgDb}_${stamp}.dump.gz"
-docker exec $DbContainer rm -f /tmp/$PgDb.dump.gz | Out-Null
-
-# 2. Filestore
-$filestorePath = "/var/lib/odoo/.local/share/Odoo/filestore"
-docker exec $OdooContainer bash -lc "if [ -d $filestorePath/$PgDb ]; then tar -czf /tmp/filestore_$PgDb.tgz -C $filestorePath $PgDb; fi"
-try {
-  docker cp "${OdooContainer}:/tmp/filestore_$PgDb.tgz" "$bkDir\filestore_${PgDb}_${stamp}.tgz"
-  docker exec $OdooContainer rm -f /tmp/filestore_$PgDb.tgz | Out-Null
-} catch {}
-
-Write-Host "✅ Backup completado en: $bkDir"
-```
-
-Ejecución:
-
-```powershell
-.ackup_odoo.ps1 -PgDb odoo_test2
-```
+1. **PowerShell** (verifica que en el prompt veas `PS` al inicio).  
+2. **Permitir ejecución de scripts** en la sesión actual:
+   ```powershell
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   ```
+   Pulsa **S** (o **O**) para aceptar.  
+3. **Docker y Docker Compose** funcionando. Verifica:
+   ```powershell
+   docker ps
+   ```
+4. **Rutas de trabajo**: sitúate en la carpeta del proyecto:
+   ```powershell
+   cd C:\Github\odoo_n8n_docker
+   ```
 
 ---
 
-## 🛠 Script de Backup (Linux/Mac bash)
+## 1) ¿Qué hace cada script?
 
-Guarda como `backup_odoo.sh` y dale permisos (`chmod +x backup_odoo.sh`):
+### `snapshot_odoo_min.ps1` → Crear snapshot
+Genera una carpeta `restore_point_YYYYMMDD_HHMM` con:
 
-```bash
-#!/bin/bash
-PgDb="odoo_test2"   # Nombre real de la BD
-PgUser="odoo_test"
-PgPass="odoo_test"
-DbContainer="odoo_n8n_docker-db-1"
-OdooContainer="odoo_n8n_docker-odoo-1"
-stamp=$(date +%Y%m%d_%H%M)
-bkDir="./backup_odoo18_$stamp"
-mkdir -p "$bkDir"
+- `db_<BD>_<stamp>.dump.gz` → **dump** de PostgreSQL.  
+- `filestore_<BD>_<stamp>.tgz` → **archivos adjuntos** de Odoo (si existen).  
+- `host_files/` → copia de **addons**, **config**, `.env` y `docker-compose.yml`.  
 
-# 1. Dump BD
-docker exec -e PGPASSWORD=$PgPass $DbContainer pg_dump -U $PgUser -d $PgDb -Fc -f /tmp/$PgDb.dump
-docker exec $DbContainer bash -lc "gzip -9 /tmp/$PgDb.dump"
-docker cp ${DbContainer}:/tmp/$PgDb.dump.gz "$bkDir/db_${PgDb}_${stamp}.dump.gz"
-docker exec $DbContainer rm -f /tmp/$PgDb.dump.gz
+> **Opcional:** si usas `-IncludeImage`, guarda además un `.tar` con la **imagen del contenedor de Odoo** (snapshot binario).
 
-# 2. Filestore
-filestorePath="/var/lib/odoo/.local/share/Odoo/filestore"
-docker exec $OdooContainer bash -lc "if [ -d $filestorePath/$PgDb ]; then tar -czf /tmp/filestore_$PgDb.tgz -C $filestorePath $PgDb; fi"
-docker cp ${OdooContainer}:/tmp/filestore_$PgDb.tgz "$bkDir/filestore_${PgDb}_${stamp}.tgz" 2>/dev/null || echo "No hay filestore"
+---
 
-echo "✅ Backup completado en: $bkDir"
+### `restore_odoo_min.ps1` → Restaurar snapshot
+- Cierra el stack (`docker compose down`) y lo levanta limpio (`up -d`).  
+- Restaura la **base de datos** con `pg_restore --clean`.  
+- Restaura el **filestore** y ajusta permisos.  
+- Reinicia servicios.  
+
+> **Opcional:** si usas `-UseImage`, cargará la **imagen congelada** si está en el snapshot.
+
+---
+
+## 2) Uso de `snapshot_odoo_min.ps1`
+
+### Sintaxis
+```powershell
+.\snapshot_odoo_min.ps1 `
+  -PgDb odoo_test2 `
+  [-PgUser odoo_test] `
+  [-PgPass odoo_test] `
+  [-DbContainer odoo_n8n_docker-db-1] `
+  [-OdooContainer odoo_n8n_docker-odoo-1] `
+  [-IncludeImage]
 ```
 
-Ejecución:
+### Parámetros
+- `-PgDb` (obligatorio): base de datos de Odoo (ej. `odoo_test2`).  
+- `-PgUser` / `-PgPass`: credenciales PostgreSQL.  
+- `-DbContainer`: contenedor de Postgres.  
+- `-OdooContainer`: contenedor de Odoo.  
+- `-IncludeImage`: guarda la imagen actual del contenedor Odoo en `.tar`.  
 
-```bash
-./backup_odoo.sh
+### Ejemplo
+```powershell
+cd C:\Github\odoo_n8n_docker
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\snapshot_odoo_min.ps1 -PgDb odoo_test2
+```
+
+### Salida típica
+```
+Destino: C:\Github\odoo_n8n_docker\restore_point_20251003_1001
+Host copiado.
+Dump BD OK.
+Filestore OK.
+----------------------------------------
+Snapshot completado.
+BD: db_odoo_test2_20251003_1001.dump.gz
+Filestore: filestore_odoo_test2_20251003_1001.tgz
+Host: host_files
 ```
 
 ---
 
-## 🔄 Restauración en caso de fallo (stack original)
+## 3) Uso de `restore_odoo_min.ps1`
 
-### 1. Levantar stack limpio
+### Sintaxis
 ```powershell
-docker compose down
-docker compose up -d
+.\restore_odoo_min.ps1 `
+  -SnapshotDir .\restore_point_YYYYMMDD_HHMM `
+  [-PgDb odoo_test2] `
+  [-PgUser odoo_test] `
+  [-PgPass odoo_test] `
+  [-DbContainer odoo_n8n_docker-db-1] `
+  [-OdooContainer odoo_n8n_docker-odoo-1] `
+  [-UseImage]
 ```
 
-### 2. Crear base de datos vacía
+### Parámetros
+- `-SnapshotDir` (obligatorio): ruta de la carpeta del snapshot.  
+- `-PgDb`, `-PgUser`, `-PgPass`: datos de PostgreSQL.  
+- `-DbContainer`, `-OdooContainer`: nombres de contenedores activos.  
+- `-UseImage`: carga la imagen congelada del snapshot (si existe).  
+
+### Ejemplo
 ```powershell
-docker exec -it odoo_n8n_docker-db-1 psql -U odoo_test -c "CREATE DATABASE odoo_test2 OWNER odoo_test;"
+cd C:\Github\odoo_n8n_docker
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\restore_odoo_min.ps1 -SnapshotDir .\restore_point_20251003_1001
 ```
 
-### 3. Restaurar la base de datos
-```powershell
-docker cp backup_odoo18_XXXX/db_odoo_test2_XXXX.dump.gz odoo_n8n_docker-db-1:/tmp/odoo.dump.gz
-docker exec -it -e PGPASSWORD=odoo_test odoo_n8n_docker-db-1 bash -c "gunzip -c /tmp/odoo.dump.gz | pg_restore -U odoo_test -d odoo_test2 --clean"
-docker exec odoo_n8n_docker-db-1 rm -f /tmp/odoo.dump.gz
-```
+### Qué hace
+1. Baja y sube los contenedores (`docker compose down/up`).  
+2. Crea la base de datos si no existe.  
+3. Restaura datos desde el dump.  
+4. Restaura filestore (si existe).  
+5. Reinicia servicios.  
 
-### 4. Restaurar filestore
-```powershell
-docker cp backup_odoo18_XXXX/filestore_odoo_test2_XXXX.tgz odoo_n8n_docker-odoo-1:/tmp/filestore.tgz
-docker exec -it odoo_n8n_docker-odoo-1 bash -c "mkdir -p /var/lib/odoo/.local/share/Odoo/filestore/odoo_test2 && tar -xzf /tmp/filestore.tgz -C /var/lib/odoo/.local/share/Odoo/filestore/odoo_test2 --strip-components=1"
-docker exec odoo_n8n_docker-odoo-1 rm -f /tmp/filestore.tgz
-```
-
-### 5. Reiniciar servicios
-```powershell
-docker compose restart
-```
-
-### 6. Acceder a Odoo
-Abrir en navegador:
-
+Accede a:  
 ```
 http://localhost:8069
 ```
-
-Seleccionar la base `odoo_test2`.  
-Listo 🚀.
+Seleccionando la base `odoo_test2`.
 
 ---
 
-## 🧪 Restauración en un clon paralelo (para pruebas)
+## 4) Comprobaciones rápidas tras restaurar
 
-También puedes levantar un **clon de Odoo** en paralelo al original, con otros contenedores y puertos, para probar backups sin tocar producción.
-
-### 1. Crear `docker-compose-clone.yml`
-
-```yaml
-version: '3.8'
-
-services:
-  db_clone:
-    image: postgres:16
-    container_name: odoo_clone_db
-    environment:
-      - POSTGRES_USER=odoo_test
-      - POSTGRES_PASSWORD=odoo_test
-      - POSTGRES_DB=postgres
-    ports:
-      - "5440:5432"
-    volumes:
-      - odoo-clone-db-data:/var/lib/postgresql/data
-    networks:
-      - odoo_clone_network
-
-  odoo_clone:
-    image: odoo:18.0
-    container_name: odoo_clone_odoo
-    depends_on:
-      - db_clone
-    ports:
-      - "8079:8069"
-    volumes:
-      - odoo-clone-web-data:/var/lib/odoo
-      - ./config:/etc/odoo
-      - ./addons:/mnt/extra-addons
-    environment:
-      - HOST=db_clone
-      - USER=odoo_test
-      - PASSWORD=odoo_test
-    networks:
-      - odoo_clone_network
-
-networks:
-  odoo_clone_network:
-    driver: bridge
-
-volumes:
-  odoo-clone-web-data:
-  odoo-clone-db-data:
-```
-
-### 2. Levantar clon
-
-```powershell
-docker compose -f docker-compose-clone.yml up -d
-```
-
-### 3. Restaurar backup en el clon
-
-```powershell
-docker exec -it odoo_clone_db psql -U odoo_test -c "CREATE DATABASE odoo_test2 OWNER odoo_test;"
-
-docker cp backup_odoo18_XXXX/db_odoo_test2_XXXX.dump.gz odoo_clone_db:/tmp/odoo.dump.gz
-docker exec -it -e PGPASSWORD=odoo_test odoo_clone_db bash -c "gunzip -c /tmp/odoo.dump.gz | pg_restore -U odoo_test -d odoo_test2 --clean"
-docker exec odoo_clone_db rm -f /tmp/odoo.dump.gz
-
-docker cp backup_odoo18_XXXX/filestore_odoo_test2_XXXX.tgz odoo_clone_odoo:/tmp/filestore.tgz
-docker exec -it odoo_clone_odoo bash -c "mkdir -p /var/lib/odoo/.local/share/Odoo/filestore/odoo_test2 && tar -xzf /tmp/filestore.tgz -C /var/lib/odoo/.local/share/Odoo/filestore/odoo_test2 --strip-components=1"
-docker exec odoo_clone_odoo rm -f /tmp/filestore.tgz
-```
-
-### 4. Reiniciar clon
-
-```powershell
-docker compose -f docker-compose-clone.yml restart
-```
-
-### 5. Acceder al clon
-
-Abrir en navegador:
-
-```
-http://localhost:8079
-```
-
-Seleccionar la base `odoo_test2`.  
-Este clon funciona en paralelo al original.
+- Accede a Odoo → selecciona tu base (`odoo_test2`).  
+- Habilita modo desarrollador → Apps → “Actualizar lista” (si instalas módulos).  
+- Logs de ayuda:
+  ```powershell
+  docker logs odoo_n8n_docker-odoo-1 --tail=200
+  docker logs odoo_n8n_docker-db-1 --tail=200
+  ```
 
 ---
 
-## ✅ Checklist rápido
+## 5) Identificar nombres de contenedores
 
-- [ ] Generar backup con `backup_odoo.ps1` o `backup_odoo.sh`  
-- [ ] Conservar `dump` + `filestore` + `docker-compose.yml` + `.env`  
-- [ ] En caso de fallo: restaurar en contenedores originales  
-- [ ] Para pruebas: restaurar en `docker-compose-clone.yml` con puertos/nombres distintos  
+Comprueba con:
+```powershell
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+```
+y usa los nombres reales en `-DbContainer` y `-OdooContainer`.
 
 ---
 
-Con este flujo tendrás siempre un **estado X guardado** y podrás **levantarlo en minutos** tanto en el entorno original como en un clon paralelo.
+## 6) Problemas comunes
+
+- **“No se reconoce el archivo .ps1…”** → Estás en `cmd`, no en PowerShell.  
+- **“La ejecución de scripts está deshabilitada…”** → Ejecuta `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.  
+- **Error en `docker cp "${Contenedor}:/ruta"`** → Ya corregido en el script (usa `${Variable}`).  
+- **“No existe contenedor X”** → Ajusta parámetros a los nombres de tu `docker ps`.  
+- **No aparece `filestore_*.tgz`** → Normal si no tenías adjuntos aún.  
+
+---
+
+## 7) Buenas prácticas
+
+- Usa **tags fijos de imagen** en `docker-compose.yml` (ej. `odoo:18.0`, `postgres:16`).  
+- Haz snapshots frecuentes (antes de cambios críticos o diariamente).  
+- Conserva 7–14 snapshots y elimina antiguos.  
+- El directorio `host_files` dentro del snapshot guarda tu **estado exacto** del proyecto (addons y config).
+
+---
+
+## 8) Ejemplos rápidos
+
+### Crear snapshot
+```powershell
+cd C:\Github\odoo_n8n_docker
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\snapshot_odoo_min.ps1 -PgDb odoo_test2
+```
+
+### Restaurar el último snapshot
+```powershell
+cd C:\Github\odoo_n8n_docker
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+$last = Get-ChildItem .\restore_point_* | Sort-Object Name -Descending | Select-Object -First 1
+.\restore_odoo_min.ps1 -SnapshotDir $last.FullName
+```
+
+---
+
+## 9) Estructura de un snapshot
+
+```
+restore_point_20251003_1001/
+├─ db_odoo_test2_20251003_1001.dump.gz
+├─ filestore_odoo_test2_20251003_1001.tgz
+└─ host_files/
+   ├─ addons/
+   ├─ config/
+   ├─ .env
+   └─ docker-compose.yml
+```
+
+Si usaste `-IncludeImage`, verás también:
+
+```
+odoo_image_20251003_1001.tar
+```
+
+---
+
+## ✅ Conclusión
+
+Con estos dos scripts (`snapshot_odoo_min.ps1` y `restore_odoo_min.ps1`) siempre tendrás un **punto de partida seguro** de tu instancia Odoo 18 en Docker y podrás **volver atrás en minutos** si algo se rompe.
