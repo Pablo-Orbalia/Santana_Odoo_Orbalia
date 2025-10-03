@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>3CX CRM Integration - Odoo Apps Store</title>
+    <link rel="stylesheet" href="/web/static/lib/bootstrap/css/bootstrap.css"/>
+    <style>
+        .oe_demo {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        .oe_picture {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .oe_picture img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .feature-icon {
+            color: #17a2b8;
+            margin-right: 10px;
+        }
+        .badge-feature {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin: 5px;
+            display: inline-block;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .step-number {
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <section class="oe_container">
+        <div class="oe_row oe_spaced">
+            <div class="oe_span12">
+                <h1 class="oe_slogan text-center" style="color: #2c3e50;">
+                    <i class="fa fa-phone feature-icon"></i>
+                    3CX CRM Integration
+                </h1>
+                <h2 class="oe_slogan text-center" style="color: #7f8c8d; font-weight: 300;">
+                    Automatic Caller Identification for Your 3CX PBX System
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container oe_dark">
+        <div class="oe_row">
+            <div class="oe_span12">
+                <div class="highlight-box">
+                    <h3 style="margin-top: 0;">Transform Your Customer Service Experience</h3>
+                    <p style="font-size: 18px; margin: 0;">
+                        Instantly identify incoming callers and access their complete Odoo CRM profile 
+                        directly from your 3CX phone interface. No more searching for customer information 
+                        while customers wait on the line.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container">
+        <div class="oe_row oe_spaced">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: #2c3e50;">
+                    <i class="fa fa-star feature-icon"></i>
+                    Key Features
+                </h2>
+                <br/>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4><i class="fa fa-search feature-icon"></i>Smart Phone Lookup</h4>
+                        <p>Automatically searches both Contacts and CRM Leads databases to find matching phone numbers, including mobile and landline numbers.</p>
+                        
+                        <h4><i class="fa fa-bolt feature-icon"></i>Real-time Identification</h4>
+                        <p>Displays caller information instantly when the phone rings, including name, company, email, and other contact details.</p>
+                        
+                        <h4><i class="fa fa-external-link feature-icon"></i>Direct Record Access</h4>
+                        <p>One-click access to open the complete contact or lead record directly in Odoo from your 3CX interface.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h4><i class="fa fa-shield feature-icon"></i>Secure API</h4>
+                        <p>Protected REST API endpoint with configurable authentication keys to ensure secure communication between 3CX and Odoo.</p>
+                        
+                        <h4><i class="fa fa-users feature-icon"></i>Complete Contact Support</h4>
+                        <p>Works with both individual contacts and company records, supporting firstname/lastname fields for better identification.</p>
+                        
+                        <h4><i class="fa fa-cog feature-icon"></i>Easy Configuration</h4>
+                        <p>Includes ready-to-use 3CX configuration files and step-by-step setup instructions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container oe_dark">
+        <div class="oe_row">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: white;">
+                    <i class="fa fa-play-circle feature-icon"></i>
+                    See It In Action
+                </h2>
+                <br/>
+                <div class="oe_picture">
+                    <img src="images/git_3cx_lookup.gif" alt="3CX CRM Integration Demo" style="max-width: 800px;"/>
+                </div>
+                <p class="text-center" style="color: #ecf0f1; font-style: italic;">
+                    Watch how incoming calls automatically display customer information from Odoo
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container">
+        <div class="oe_row oe_spaced">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: #2c3e50;">
+                    <i class="fa fa-wrench feature-icon"></i>
+                    Easy Installation & Configuration
+                </h2>
+                <br/>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="oe_demo">
+                            <h4><span class="step-number">1</span>Install Module</h4>
+                            <p>Install the 3CX CRM Integration module in your Odoo instance. The module automatically configures the necessary API endpoint.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="oe_demo">
+                            <h4><span class="step-number">2</span>Configure API Key</h4>
+                            <p>Set your secure API key in Odoo system parameters. This key will be used by 3CX to authenticate with your Odoo instance.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="oe_demo">
+                            <h4><span class="step-number">3</span>Setup 3CX</h4>
+                            <p>Upload the provided XML configuration file to your 3CX PBX system and configure the connection settings.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container oe_dark">
+        <div class="oe_row">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: white;">
+                    <i class="fa fa-cogs feature-icon"></i>
+                    3CX Configuration Screenshots
+                </h2>
+                <br/>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="oe_picture">
+                            <img src="images/3cx_conf1.png" alt="3CX Configuration Step 1"/>
+                            <p style="color: #ecf0f1; text-align: center;">CRM Integration Setup</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="oe_picture">
+                            <img src="images/3cx_conf2.png" alt="3CX Configuration Step 2"/>
+                            <p style="color: #ecf0f1; text-align: center;">Provider Configuration</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="oe_picture">
+                            <img src="images/3cx_conf3.png" alt="3CX Configuration Step 3"/>
+                            <p style="color: #ecf0f1; text-align: center;">Connection Parameters</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="oe_picture">
+                            <img src="images/3cx_conf4.png" alt="3CX Configuration Step 4"/>
+                            <p style="color: #ecf0f1; text-align: center;">Field Mapping Setup</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container">
+        <div class="oe_row oe_spaced">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: #2c3e50;">
+                    <i class="fa fa-check-circle feature-icon"></i>
+                    Business Benefits
+                </h2>
+                <br/>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul style="font-size: 16px; line-height: 1.8;">
+                            <li><strong>Improved Customer Service:</strong> Instantly know who's calling and their history</li>
+                            <li><strong>Increased Efficiency:</strong> No time wasted searching for customer information</li>
+                            <li><strong>Better Personalization:</strong> Address customers by name immediately</li>
+                            <li><strong>Enhanced Productivity:</strong> Direct access to customer records during calls</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul style="font-size: 16px; line-height: 1.8;">
+                            <li><strong>Professional Image:</strong> Demonstrate knowledge of customer relationships</li>
+                            <li><strong>Faster Resolution:</strong> Access to customer history and previous interactions</li>
+                            <li><strong>Seamless Integration:</strong> Works within your existing workflow</li>
+                            <li><strong>Scalable Solution:</strong> Supports unlimited users and phone numbers</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container oe_dark">
+        <div class="oe_row">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: white;">
+                    <i class="fa fa-puzzle-piece feature-icon"></i>
+                    Technical Requirements
+                </h2>
+                <br/>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 style="color: #ecf0f1;"><i class="fa fa-server feature-icon"></i>Odoo Requirements</h4>
+                        <ul style="color: #ecf0f1;">
+                            <li>Odoo 18.0 or higher</li>
+                            <li>CRM module installed</li>
+                            <li>Partner Firstname module (OCA)</li>
+                            <li>Public API access enabled</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h4 style="color: #ecf0f1;"><i class="fa fa-phone feature-icon"></i>3CX Requirements</h4>
+                        <ul style="color: #ecf0f1;">
+                            <li>3CX Phone System v16 or higher</li>
+                            <li>CRM integration feature enabled</li>
+                            <li>Network access to Odoo server</li>
+                            <li>Administrative access to 3CX Management Console</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container">
+        <div class="oe_row oe_spaced">
+            <div class="oe_span12">
+                <h2 class="text-center" style="color: #2c3e50;">
+                    <i class="fa fa-life-ring feature-icon"></i>
+                    Support & Documentation
+                </h2>
+                <br/>
+                <div class="text-center">
+                    <p style="font-size: 18px; margin-bottom: 30px;">
+                        Complete documentation and professional support included with your purchase.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="oe_demo">
+                                <h4><i class="fa fa-book feature-icon"></i>Documentation</h4>
+                                <p>Comprehensive setup guide and troubleshooting documentation included.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="oe_demo">
+                                <h4><i class="fa fa-file-code-o feature-icon"></i>Configuration Files</h4>
+                                <p>Ready-to-use 3CX XML configuration files for quick deployment.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="oe_demo">
+                                <h4><i class="fa fa-envelope feature-icon"></i>Professional Support</h4>
+                                <p>Email support from the FL1 team for installation and configuration assistance.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="oe_container oe_dark">
+        <div class="oe_row">
+            <div class="oe_span12">
+                <div class="highlight-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 style="margin-top: 0;">Ready to Enhance Your Customer Service?</h3>
+                    <p style="font-size: 18px; margin-bottom: 20px;">
+                        Join hundreds of businesses using 3CX CRM Integration to provide exceptional customer service.
+                    </p>
+                    <p style="font-size: 16px; margin: 0;">
+                        <strong>Author:</strong> FL1 sro | 
+                        <strong>Support:</strong> <a href="mailto:support@fl1.cz" style="color: white;">support@fl1.cz</a> | 
+                        <strong>Website:</strong> <a href="https://www.fl1.cz" style="color: white;">www.fl1.cz</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
