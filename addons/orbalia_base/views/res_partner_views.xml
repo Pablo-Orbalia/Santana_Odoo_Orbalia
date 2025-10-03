@@ -1,0 +1,19 @@
+﻿<odoo>
+  <record id="view_partner_form_orbalia_min" model="ir.ui.view">
+    <field name="name">res.partner.form.orbalia.min</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+      <sheet position="inside">
+        <notebook>
+          <page string="Orbalia (prueba)">
+            <group>
+              <field name="es_empresa_operativa"/>
+            </group>
+          </page>
+        </notebook>
+      </sheet>
+    </field>
+  </record>
+</odoo>
