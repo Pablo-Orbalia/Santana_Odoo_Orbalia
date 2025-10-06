@@ -1,0 +1,14 @@
+<odoo>
+    <record id="action_orbalia_project" model="ir.actions.act_window">
+        <field name="name">Proyectos Orbalia</field>
+        <field name="res_model">orbalia.project</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
+    <menuitem id="menu_orbalia_project"
+              name="Proyectos"
+              parent="menu_orbalia_root"
+              action="action_orbalia_project"
+              sequence="10"/>
+</odoo>

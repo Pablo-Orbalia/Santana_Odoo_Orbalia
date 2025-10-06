@@ -1,15 +1,15 @@
 {
     'name': 'Orbalia Base',
-    'version': '18.0.1.0.0',
-    'summary': 'Campos base y vistas para Contactos',
-    'author': 'Orbalia',
-    'website': 'https://orbalia.es',
-    'license': 'LGPL-3',
+    'version': '1.0.0',
+    'summary': 'Base de Orbalia (menú y modelo de ejemplo)',
     'category': 'Tools',
-    'depends': ['base', 'contacts'],
+    'license': 'LGPL-3',
+    'depends': [],
     'data': [
+        'security/ir.model.access.csv',
+        'views/project_views.xml',
         'views/res_partner_views.xml',
     ],
     'installable': True,
-    'application': False
+    'application': True,
 }
