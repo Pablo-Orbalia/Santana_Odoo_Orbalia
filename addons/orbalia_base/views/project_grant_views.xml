@@ -1,0 +1,58 @@
+<odoo>
+    <!-- Formulario: pestaña nueva y botones -->
+    <record id="view_project_form_inherit_grant" model="ir.ui.view">
+        <field name="name">project.project.form.grant</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+
+            <!-- Botones de estado en el header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_submit" type="object" string="Presentar"
+                        attrs="{'invisible': [('grant_state','!=','draft')]}"/>
+                <button name="action_award" type="object" string="Conceder"
+                        attrs="{'invisible': [('grant_state','!=','submitted')]}"/>
+                <button name="action_reject" type="object" string="Rechazar"
+                        attrs="{'invisible': [('grant_state','!=','submitted')]}"/>
+                <button name="action_cancel" type="object" string="Cancelar"
+                        attrs="{'invisible': [('grant_state','in', ['cancel'])]}"/>
+                <button name="action_reset" type="object" string="Reiniciar"
+                        attrs="{'invisible': [('grant_state','=','draft')]}"/>
+            </xpath>
+
+            <!-- Pestaña nueva con los campos de subvención -->
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Subvención">
+                    <group>
+                        <group>
+                            <field name="organismo"/>
+                            <field name="convocatoria"/>
+                            <field name="grant_state"/>
+                        </group>
+                        <group>
+                            <field name="importe_solicitado"/>
+                            <field name="importe_concedido"/>
+                            <field name="currency_id"/>
+                            <field name="fecha_solicitud"/>
+                            <field name="fecha_resolucion"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Lista/Kanban: muestra columnas básicas (opcional) -->
+    <record id="view_project_tree_inherit_grant" model="ir.ui.view">
+        <field name="name">project.project.tree.grant</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[@name='name']" position="after">
+                <field name="organismo"/>
+                <field name="importe_concedido"/>
+                <field name="grant_state"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
