@@ -1,139 +1,173 @@
+<# ===================================================================
+ RESTORE ODOO SIDE-BY-SIDE (sin borrar tu entorno actual)
+=================================================================== #>
+
 param(
-  # Carpeta del snapshot (por ej.: .\restore_point_20251003_1001)
-  [Parameter(Mandatory=$true)]
+  [Parameter(Mandatory = $true)]
   [string]$SnapshotDir,
-
-  # Parametros de BD
-  [string]$PgDb = "odoo_test2",
-  [string]$PgUser = "odoo_test",
-  [string]$PgPass = "odoo_test",
-
-  # Nombres reales de contenedores (ajustalos si difieren)
-  [string]$DbContainer = "odoo_n8n_docker-db-1",
-  [string]$OdooContainer = "odoo_n8n_docker-odoo-1",
-
-  # Si quieres cargar una imagen congelada (si la guardaste con -IncludeImage en el snapshot)
-  [switch]$UseImage = $false
+  [int]$HostPort = 8079,
+  [string]$NamePrefix = "odoo-restore",
+  [string]$PgDb = "",
+  [string]$PgUser = "",
+  [string]$PgPass = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-function Exists-Container($name) {
-  $out = docker ps -a --format "{{.Names}}" | Where-Object { $_ -eq $name }
-  return [bool]$out
+function New-RandomSuffix { (Get-Date -Format "yyyyMMdd_HHmmss") }
+
+function Assert-File([string]$pattern, [string]$desc) {
+  $f = Get-ChildItem -Path $SnapshotDir -Filter $pattern -ErrorAction SilentlyContinue |
+       Sort-Object Name -Descending | Select-Object -First 1
+  if (-not $f) { throw "No se encontró $desc con patrón '$pattern' en $SnapshotDir" }
+  return $f
 }
 
-if (-not (Test-Path $SnapshotDir)) {
-  Write-Host "No existe el directorio de snapshot: $SnapshotDir"
-  exit 1
+if (-not (Test-Path $SnapshotDir)) { throw "No existe la carpeta $SnapshotDir" }
+
+# Artefactos
+$dump   = Assert-File -pattern "*.dump.gz"   -desc "dump de base de datos (.dump.gz)"
+$fs     = Get-ChildItem -Path $SnapshotDir -Filter "filestore_*.tgz"  -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+$roles  = Get-ChildItem -Path $SnapshotDir -Filter "globals_*.sql"    -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+$imgTar = Get-ChildItem -Path $SnapshotDir -Filter "odoo_image_*.tar" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+
+# Inferencias
+if ([string]::IsNullOrWhiteSpace($PgDb)) {
+  if ($dump.Name -match "^db_(?<db>[^_]+)_\d{8}_\d{4}\.dump\.gz$") { $PgDb = $Matches.db }
+}
+if ([string]::IsNullOrWhiteSpace($PgUser)) { $PgUser = "odoo" }
+if ([string]::IsNullOrWhiteSpace($PgUser)) { $PgUser = Read-Host "Usuario de Postgres (p.ej. odoo_test)" }
+if ([string]::IsNullOrWhiteSpace($PgDb))   { $PgDb   = Read-Host "Nombre de la BD a restaurar (p.ej. odoo_test2)" }
+if ([string]::IsNullOrWhiteSpace($PgPass)) { $PgPass = Read-Host "Password del usuario de Postgres (para el contenedor nuevo)" }
+
+# Nombres (trim para evitar espacios accidentales)
+$suffix     = New-RandomSuffix
+$netName    = ("{0}_net_{1}" -f $NamePrefix,$suffix).Trim()
+$dbName     = ("{0}-db-{1}" -f $NamePrefix,$suffix).Trim()
+$odooName   = ("{0}-odoo-{1}" -f $NamePrefix,$suffix).Trim()
+$pgVolume   = ("{0}_pgdata_{1}" -f $NamePrefix,$suffix).Trim()
+$odooVolume = ("{0}_filestore_{1}" -f $NamePrefix,$suffix).Trim()
+
+Write-Host "-> Puerto host:   $HostPort -> 8069"
+Write-Host "-> BD/USER:       $PgDb / $PgUser"
+
+# Red y volúmenes
+docker network create $netName | Out-Null
+docker volume  create $pgVolume  | Out-Null
+docker volume  create $odooVolume| Out-Null
+
+# ---- Postgres (args como array, estable) ----
+Write-Host "-> Levantando Postgres ($dbName)..."
+$pgArgs = @(
+  'run','-d','--name', $dbName,
+  '--network', $netName,
+  '-e', "POSTGRES_USER=$PgUser",
+  '-e', "POSTGRES_PASSWORD=$PgPass",
+  '-e', "POSTGRES_DB=$PgDb",
+  '-v', "${pgVolume}:/var/lib/postgresql/data",
+  'postgres:16'
+)
+& docker @pgArgs
+if ($LASTEXITCODE -ne 0) { throw "Fallo al lanzar Postgres." }
+
+# Esperar disponibilidad
+Write-Host "-> Esperando disponibilidad de Postgres (pg_isready)..."
+$maxWait = 60; $ok = $false
+for ($i=0; $i -lt $maxWait; $i++) {
+  docker exec $dbName bash -lc "pg_isready -U $PgUser -d $PgDb" | Out-Null
+  if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+  Start-Sleep -Seconds 2
+}
+if (-not $ok) { throw "Postgres no respondió a tiempo. Logs: docker logs $dbName" }
+
+# Roles (si existen)
+if ($roles) {
+  Write-Host "-> Restaurando roles globales..."
+  docker cp $roles.FullName "${dbName}:/tmp/roles.sql"
+  docker exec -e PGPASSWORD=$PgPass -it $dbName bash -lc "psql -U $PgUser -d postgres -f /tmp/roles.sql" | Out-Null
 }
 
-# 0) Parar stack actual
-Write-Host "[1/6] Deteniendo stack: docker compose down"
-try { docker compose down | Out-Null } catch {}
+# Restaurar BD desde fichero
+Write-Host "-> Copiando dump a contenedor y restaurando BD..."
+$dumpInC = "/tmp/restore.dump.gz"
+docker cp $dump.FullName "${dbName}:${dumpInC}"
 
-# 1) (Opcional) Cargar imagen congelada
-if ($UseImage) {
-  $img = Get-ChildItem -Path $SnapshotDir -Filter "odoo_image_*.tar" -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($img) {
-    Write-Host "[2/6] Cargando imagen congelada: $($img.Name)"
-    docker load -i $img.FullName | Out-Null
-  } else {
-    Write-Host "[2/6] No se encontro odoo_image_*.tar en $SnapshotDir. Continuo sin UseImage."
+# Recrear BD con comandos separados (sin '&&' ni comillas conflictivas)
+docker exec -e PGPASSWORD=$PgPass $dbName dropdb  -U $PgUser --if-exists "$PgDb"
+if ($LASTEXITCODE -ne 0) { throw 'Fallo en dropdb.' }
+docker exec -e PGPASSWORD=$PgPass $dbName createdb -U $PgUser "$PgDb"
+if ($LASTEXITCODE -ne 0) { throw 'Fallo en createdb.' }
+
+# Restaurar dump
+docker exec -e PGPASSWORD=$PgPass $dbName bash -lc "gunzip -c ${dumpInC} | pg_restore -U '$PgUser' -d '$PgDb' -v --clean --if-exists"
+if ($LASTEXITCODE -ne 0) { throw 'Fallo al restaurar el dump en Postgres.' }
+
+# Imagen de Odoo (limpiar 'Loaded image: ' y espacios/CRLF)
+$odooImage = $null
+if ($imgTar) {
+  Write-Host "-> Cargando imagen snapshot de Odoo desde $($imgTar.Name)..."
+  $loadOutLines = docker load -i $imgTar.FullName
+  $joined = ($loadOutLines | Out-String)
+  if ($joined -match "Loaded image:\s*(?<tag>.+)$") {
+    $odooImage = $Matches['tag']
   }
-} else {
-  Write-Host "[2/6] Omitido: carga de imagen congelada"
 }
-
-# 2) Levantar stack limpio
-Write-Host "[3/6] Levantando stack: docker compose up -d"
-docker compose up -d
-
-# Confirmar contenedores
-if (-not (Exists-Container $DbContainer)) {
-  Write-Host "No existe contenedor DB: $DbContainer"
-  exit 1
-}
-if (-not (Exists-Container $OdooContainer)) {
-  Write-Host "No existe contenedor Odoo: $OdooContainer"
-  exit 1
-}
-
-# 3) Restaurar BD (AUTODETECCION)
-Write-Host "[4/6] Preparando base de datos: $PgDb"
-
-# Crear BD limpia (DROP/CREATE)
-try {
-  docker exec -i $DbContainer psql -U $PgUser -d postgres -c "DROP DATABASE IF EXISTS $PgDb;" | Out-Null
-  docker exec -i $DbContainer psql -U $PgUser -d postgres -c "CREATE DATABASE $PgDb OWNER $PgUser;" | Out-Null
-} catch {
-  Write-Host "Aviso: error creando BD (continuo): $_"
-}
-
-# Localizar el dump mas reciente (segun tu snapshot actual termina en .dump.gz)
-$dump = Get-ChildItem -Path $SnapshotDir -Filter ("db_{0}_*.dump.gz" -f $PgDb) | Sort-Object Name -Descending | Select-Object -First 1
-if (-not $dump) {
-  Write-Host "No se encontro dump de BD (db_${PgDb}_*.dump.gz) en $SnapshotDir"
-  exit 1
-}
-Write-Host ("Usando dump: {0}" -f $dump.Name)
-
-# Copiar al contenedor para poder inspeccionarlo
-docker cp $dump.FullName "${DbContainer}:/tmp/odoo.dump"
-
-# Autodetectar formato:
-# - GZIP: cabecera 0x1F 0x8B -> "31 139"
-# - Formato personalizado pg_dump: empieza por "PGDMP"
-$magicBytes = ([System.IO.File]::ReadAllBytes($dump.FullName))[0..1] -join ' '
-$gzipHeader = ($magicBytes -eq '31 139')
-
-if ($gzipHeader) {
-  # dump.gz real -> descomprimir y restaurar con pg_restore
-  docker exec -e PGPASSWORD=$PgPass -i $DbContainer bash -lc "gunzip -c /tmp/odoo.dump | pg_restore --clean -U $PgUser -d $PgDb"
-} else {
-  # No es gzip. Comprobar si es formato personalizado (PGDMP) o SQL plano
-  $head5 = -join (Get-Content $dump.FullName -Encoding Byte -TotalCount 5 | ForEach-Object {[char]$_})
-  if ($head5 -eq 'PGDMP') {
-    docker exec -e PGPASSWORD=$PgPass -i $DbContainer bash -lc "gunzip -c /tmp/odoo.dump | pg_restore --clean --if-exists -U $PgUser -d $PgDb"
-  } else {
-    docker exec -e PGPASSWORD=$PgPass -i $DbContainer bash -lc "psql -U $PgUser -d $PgDb < /tmp/odoo.dump"
+if ([string]::IsNullOrWhiteSpace($odooImage)) {
+  # Fallback razonable
+  $odooImage = (docker images --format "{{.Repository}}:{{.Tag}}" | Select-String -Pattern "^orbalia/odoo18:" | Select-Object -First 1).ToString()
+  if ([string]::IsNullOrWhiteSpace($odooImage)) {
+    $odooImage = (docker images --format "{{.Repository}}:{{.Tag}}" | Select-Object -First 1).ToString()
   }
 }
+$odooImage = ($odooImage -replace '\s+$','').Trim()
+if ([string]::IsNullOrWhiteSpace($odooImage)) { throw "No se pudo determinar la imagen de Odoo a usar." }
+Write-Host "   Imagen a usar: $odooImage"
 
-# Limpiar archivo temporal del contenedor
-docker exec $DbContainer rm -f /tmp/odoo.dump | Out-Null
-
-# Crear extensiones utiles (por si no vienen en el dump)
-try {
-  docker exec -i $DbContainer psql -U $PgUser -d $PgDb -c "CREATE EXTENSION IF NOT EXISTS unaccent;" | Out-Null
-  docker exec -i $DbContainer psql -U $PgUser -d $PgDb -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;" | Out-Null
-} catch {
-  Write-Host "Aviso: no se pudieron crear extensiones (continuo): $_"
+# ---- Odoo (args como array usando opciones largas con '=') ----
+Write-Host "-> Levantando Odoo ($odooName) en puerto $HostPort..."
+$odooArgs = @(
+  'run','-d',
+  '--name', $odooName,
+  '--network', $netName,
+  "--publish=$HostPort`:8069",
+  "--env=HOST=$dbName",
+  "--env=USER=$PgUser",
+  "--env=PASSWORD=$PgPass",
+  "--env=DB=$PgDb",
+  "--volume=${odooVolume}:/var/lib/odoo",
+  $odooImage
+)
+& docker @odooArgs
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Args de docker run usados:" -ForegroundColor Yellow
+  $odooArgs | ForEach-Object { Write-Host "  $_" }
+  throw 'Fallo al lanzar el contenedor de Odoo.'
 }
 
-# 4) Restaurar filestore (AUTODETECCION)
-$fs = Get-ChildItem -Path $SnapshotDir -Filter ("filestore_{0}_*.tgz" -f $PgDb) | Sort-Object Name -Descending | Select-Object -First 1
+# Filestore (si existe)
 if ($fs) {
-  Write-Host "[5/6] Restaurando filestore: $($fs.Name)"
-  docker cp $fs.FullName "${OdooContainer}:/tmp/filestore.arc"
-  $fsPath = "/var/lib/odoo/.local/share/Odoo/filestore/$PgDb"
-
-  # Detecta si el .tgz está gzip o es tar plano
-  $fsMagic = ([System.IO.File]::ReadAllBytes($fs.FullName))[0..1] -join ' '
-  if ($fsMagic -eq '31 139') {
-    docker exec -u root -i $OdooContainer bash -lc "rm -rf $fsPath && mkdir -p $fsPath && tar -xzf /tmp/filestore.arc -C $fsPath --strip-components=1 && chown -R odoo:odoo $fsPath && rm -f /tmp/filestore.arc"
-  } else {
-    docker exec -u root -i $OdooContainer bash -lc "rm -rf $fsPath && mkdir -p $fsPath && tar -xf  /tmp/filestore.arc -C $fsPath --strip-components=1 && chown -R odoo:odoo $fsPath && rm -f /tmp/filestore.arc"
-  }
-} else {
-  Write-Host "[5/6] No se encontro archivo de filestore en el snapshot (continuo sin adjuntos historicos)."
+  Write-Host "-> Restaurando filestore desde $($fs.Name)..."
+  docker cp $fs.FullName "${odooName}:/tmp/filestore.tgz"
+  $bashFs = @'
+set -e
+mkdir -p /var/lib/odoo/.local/share/Odoo/filestore || true
+tar -xzf /tmp/filestore.tgz -C /var/lib/odoo/.local/share/Odoo/filestore || true
+chown -R odoo:odoo /var/lib/odoo || true
+'@
+  docker exec -it $odooName bash -lc "$bashFs"
 }
 
-
-# 5) Reiniciar servicios
-Write-Host "[6/6] Reiniciando servicio de Odoo"
-docker compose restart odoo | Out-Null
+# Logs
+Write-Host "-> Comprobando logs iniciales de Odoo (5 s)..."
+Start-Sleep -Seconds 5
+docker logs --tail 50 $odooName
 
 Write-Host ""
-Write-Host "OK: Restauracion completada."
-Write-Host ("Abrir: http://localhost:8069  -> Base: {0}" -f $PgDb)
+Write-Host "==============================================="
+Write-Host "Restauracion en paralelo completada."
+Write-Host "URL: http://localhost:$HostPort"
+Write-Host "Red: $netName"
+Write-Host "DB:  contenedor $dbName  (volumen: $pgVolume)"
+Write-Host "FS:  volumen $odooVolume"
+Write-Host "Odoo contenedor: $odooName  (imagen: $odooImage)"
+Write-Host "==============================================="
