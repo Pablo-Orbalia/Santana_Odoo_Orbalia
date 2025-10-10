@@ -1,0 +1,18 @@
+<record id="view_orbalia_project_search" model="ir.ui.view">
+  <field name="name">orbalia.project.search</field>
+  <field name="model">orbalia.project</field>
+  <field name="arch" type="xml">
+    <search>
+      <field name="name" string="Código"/>
+      <field name="title" string="Título"/>
+      <filter string="Borrador" domain="[('state','=','draft')]"/>
+      <filter string="Presentada" domain="[('state','=','submitted')]"/>
+      <filter string="Concedida" domain="[('state','=','awarded')]"/>
+      <filter string="Rechazada" domain="[('state','=','rejected')]"/>
+      <filter string="Cancelada" domain="[('state','=','cancel')]"/>
+      <filter string="Agrupar por estado" context="{'group_by':'state'}"/>
+    </search>
+  </field>
+</record>
+
+

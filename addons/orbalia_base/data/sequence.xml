@@ -1,0 +1,10 @@
+<odoo noupdate="1">
+    <record id="seq_orbalia_grant" model="ir.sequence">
+        <field name="name">Secuencia Subvenciones</field>
+        <field name="code">orbalia.grant</field>
+        <field name="prefix">GRANT/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="implementation">no_gap</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

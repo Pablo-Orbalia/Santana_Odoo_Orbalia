@@ -9,15 +9,15 @@
             <!-- Botones de estado en el header -->
             <xpath expr="//header" position="inside">
                 <button name="action_submit" type="object" string="Presentar"
-                        attrs="{'invisible': [('grant_state','!=','draft')]}"/>
+                        modifiers="{'invisible': [['grant_state','!=','draft']]}"/>
                 <button name="action_award" type="object" string="Conceder"
-                        attrs="{'invisible': [('grant_state','!=','submitted')]}"/>
+                        modifiers="{'invisible': [['grant_state','!=','submitted']]}"/>
                 <button name="action_reject" type="object" string="Rechazar"
-                        attrs="{'invisible': [('grant_state','!=','submitted')]}"/>
+                        modifiers="{'invisible': [['grant_state','!=','submitted']]}"/>
                 <button name="action_cancel" type="object" string="Cancelar"
-                        attrs="{'invisible': [('grant_state','in', ['cancel'])]}"/>
+                        modifiers="{'invisible': [['grant_state','in',['cancel']]]}"/>
                 <button name="action_reset" type="object" string="Reiniciar"
-                        attrs="{'invisible': [('grant_state','=','draft')]}"/>
+                        modifiers="{'invisible': [['grant_state','=','draft']]}"/>
             </xpath>
 
             <!-- Pestaña nueva con los campos de subvención -->
@@ -42,13 +42,13 @@
         </field>
     </record>
 
-    <!-- Lista/Kanban: muestra columnas básicas (opcional) -->
-    <record id="view_project_tree_inherit_grant" model="ir.ui.view">
-        <field name="name">project.project.tree.grant</field>
+    <!-- Lista: muestra columnas básicas (ya sin 'tree' en v17+) -->
+    <record id="view_project_list_inherit_grant" model="ir.ui.view">
+        <field name="name">project.project.list.grant</field>
         <field name="model">project.project</field>
         <field name="inherit_id" ref="project.view_project"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree/field[@name='name']" position="after">
+            <xpath expr="//list/field[@name='name']" position="after">
                 <field name="organismo"/>
                 <field name="importe_concedido"/>
                 <field name="grant_state"/>
