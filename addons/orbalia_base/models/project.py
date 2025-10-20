@@ -20,7 +20,7 @@ class OrbaliaProject(models.Model):
     convocatoria = fields.Char(string="Convocatoria")
     partner_id = fields.Many2one("res.partner", string="Entidad solicitante")
 
-    # Compañía y moneda (solo para cálculo/visualización; no se muestra en formulario)
+    # Compañía y moneda
     company_id = fields.Many2one(
         "res.company",
         string="Compañía",
@@ -35,7 +35,7 @@ class OrbaliaProject(models.Model):
         readonly=True,
     )
 
-    # Importes (usan la moneda de la compañía)
+    # Importes
     importe_solicitado = fields.Monetary(
         string="Importe solicitado",
         currency_field="company_currency_id",
@@ -51,12 +51,10 @@ class OrbaliaProject(models.Model):
         default=fields.Date.context_today,
     )
     fecha_resolucion = fields.Date(string="Fecha de resolución")
-
-    # Nuevos campos de justificación
     fecha_justificacion = fields.Date(string="Fecha de justificación")
     fecha_limite_justificacion = fields.Date(string="Fecha límite de justificación")
 
-    # Estado
+    # Estado administrativo (se mantiene)
     state = fields.Selection(
         [
             ("draft", "Borrador"),
@@ -69,10 +67,18 @@ class OrbaliaProject(models.Model):
         default="draft",
     )
 
+    stage_id = fields.Many2one(
+        "orbalia.project.stage",
+        string="Etapa",
+        index=True,
+        required=True,  # ← obligatorio
+        default=lambda self: self.env["orbalia.project.stage"].search([], order="sequence", limit=1).id,
+    )
+
     # Notas
     nota = fields.Text(string="Notas")
 
-    # Acciones de cambio de estado
+    # Acciones de cambio de estado administrativo
     def action_submit(self):
         self.write({"state": "submitted"})
 

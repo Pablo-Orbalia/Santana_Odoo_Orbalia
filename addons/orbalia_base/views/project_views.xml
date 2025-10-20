@@ -27,6 +27,9 @@
 
               <field name="state" widget="statusbar"
                      statusbar_visible="draft,submitted,awarded,rejected,cancel"/>
+
+              <!-- NUEVO: Etapa configurable para Kanban -->
+              <field name="stage_id"/>
             </group>
           </group>
 
@@ -55,6 +58,7 @@
         <field name="fecha_justificacion"/>
         <field name="fecha_limite_justificacion"/>
         <field name="state"/>
+        <field name="stage_id"/>
       </list>
     </field>
   </record>
@@ -72,7 +76,9 @@
         <filter string="Concedida"  name="awarded"  domain="[('state','=','awarded')]"/>
         <filter string="Rechazada"  name="rejected" domain="[('state','=','rejected')]"/>
         <filter string="Cancelada"  name="cancel"   domain="[('state','=','cancel')]"/>
-        <filter string="Estado" name="group_by_state" context="{'group_by': 'state'}"/>
+        <!-- Agrupar por etapa (por defecto) -->
+        <filter string="Agrupar por etapa" name="group_by_stage" context="{'group_by': 'stage_id'}"/>
+        <filter string="Agrupar por estado" name="group_by_state" context="{'group_by': 'state'}"/>
       </search>
     </field>
   </record>
@@ -83,7 +89,7 @@
     <field name="res_model">orbalia.project</field>
     <field name="view_mode">kanban,list,form</field>
     <field name="search_view_id" ref="view_orbalia_project_search"/>
-    <field name="context">{'search_default_group_by_state': 1}</field>
+    <field name="context">{'search_default_group_by_stage': 1}</field>
   </record>
 
   <!-- 5) Menús -->

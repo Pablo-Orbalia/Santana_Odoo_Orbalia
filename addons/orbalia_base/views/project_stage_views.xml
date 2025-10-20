@@ -1,0 +1,46 @@
+<odoo>
+  <record id="action_orbalia_project_stage" model="ir.actions.act_window">
+    <field name="name">Etapas de subvención</field>
+    <field name="res_model">orbalia.project.stage</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+  <menuitem id="menu_orbalia_project_stage"
+            name="Etapas"
+            parent="menu_orbalia_root"
+            action="action_orbalia_project_stage"
+            sequence="20"/>
+
+  <record id="view_orbalia_project_stage_list" model="ir.ui.view">
+    <field name="name">orbalia.project.stage.list</field>
+    <field name="model">orbalia.project.stage</field>
+    <field name="arch" type="xml">
+      <list editable="bottom">
+        <field name="sequence"/>
+        <field name="name"/>
+        <field name="active"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_orbalia_project_stage_form" model="ir.ui.view">
+    <field name="name">orbalia.project.stage.form</field>
+    <field name="model">orbalia.project.stage</field>
+    <field name="arch" type="xml">
+      <form string="Etapa de subvención">
+        <sheet>
+          <group>
+            <group>
+              <field name="name"/>
+              <field name="sequence"/>
+              <field name="active"/>
+            </group>
+            <group>
+              <field name="description"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+</odoo>

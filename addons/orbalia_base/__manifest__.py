@@ -1,20 +1,23 @@
 {
     'name': 'Orbalia Base',
-    'version': '1.0.1',
-    'summary': 'Base de Orbalia (menú y modelo de ejemplo)',
+    'version': '1.0.2',
+    'summary': 'Base de Orbalia (subvenciones con etapas configurables)',
     'category': 'Tools',
     'license': 'LGPL-3',
     'depends': ['base', 'mail', 'project'],
     'data': [
         'security/ir.model.access.csv',
 
-        # DATA (opcional si creaste la secuencia)
+        # DATA
         'data/sequence.xml',
+        # (opcional) etapas por defecto:
+        #'data/project_stage_data.xml',
 
         # VISTAS
-        'views/project_views.xml',          # vistas del modelo orbalia.project
+        'views/project_stage_views.xml',
+        'views/project_views.xml',
         'views/project_grant_views.xml',
-        'views/project_kanban.xml',     # herencia de project.project (usar modifiers)
+        'views/project_kanban.xml',
         'views/res_partner_views.xml',
     ],
     'installable': True,

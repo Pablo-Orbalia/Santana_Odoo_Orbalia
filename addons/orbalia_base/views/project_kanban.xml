@@ -4,7 +4,7 @@
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <kanban class="o_kanban_small_column o_kanban_grouped"
-              default_group_by="state">
+              default_group_by="stage_id">
 
         <!-- Campos en cache para la plantilla -->
         <field name="name"/>
@@ -14,12 +14,12 @@
         <field name="convocatoria"/>
         <field name="importe_solicitado"/>
         <field name="importe_concedido"/>
-        <!-- ❌ quitado currency_id -->
         <field name="fecha_solicitud"/>
         <field name="fecha_resolucion"/>
         <field name="fecha_justificacion"/>
         <field name="fecha_limite_justificacion"/>
         <field name="state"/>
+        <field name="stage_id"/>
 
         <templates>
           <t t-name="kanban-box">
@@ -35,6 +35,10 @@
               </div>
 
               <div class="o_kanban_tags mt-2">
+                <!-- Etapa como badge (opcional, la columna ya es la etapa) -->
+                <span t-if="record.stage_id.value" class="badge">
+                  <i class="fa fa-columns me-1"/><t t-esc="record.stage_id.value"/>
+                </span>
                 <span t-if="record.partner_id.value" class="badge">
                   <i class="fa fa-building-o me-1"/><t t-esc="record.partner_id.value"/>
                 </span>
