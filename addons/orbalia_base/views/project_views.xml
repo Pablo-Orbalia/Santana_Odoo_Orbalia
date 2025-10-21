@@ -6,6 +6,15 @@
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <form string="Subvención">
+
+        <!-- Etapa como BADGE (solo lectura) en el header -->
+        <header>
+          <field name="stage_id"
+                 widget="badge"
+                 readonly="1"
+                 options="{'no_open': True}"/>
+        </header>
+
         <sheet>
           <group>
             <group>
@@ -25,11 +34,12 @@
               <field name="fecha_justificacion"/>
               <field name="fecha_limite_justificacion"/>
 
-              <field name="state" widget="statusbar"
-                     statusbar_visible="draft,submitted,awarded,rejected,cancel"/>
+              <!-- (Eliminada) barra de estado de 'state' -->
+              <!-- <field name="state" widget="statusbar"
+                         statusbar_visible="draft,submitted,awarded,rejected,cancel"/> -->
 
-              <!-- NUEVO: Etapa configurable para Kanban -->
-              <field name="stage_id"/>
+              <!-- (Retirado del cuerpo) stage_id -->
+              <!-- <field name="stage_id"/> -->
             </group>
           </group>
 
