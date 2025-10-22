@@ -6,83 +6,35 @@
       <kanban class="o_kanban_small_column o_kanban_grouped"
               default_group_by="stage_id">
 
-        <!-- Campos en cache para la plantilla -->
-        <field name="name"/>
+        <!-- Campos usados en la plantilla -->
         <field name="title"/>
         <field name="partner_id"/>
-        <field name="organismo"/>
-        <field name="convocatoria"/>
-        <field name="importe_solicitado"/>
-        <field name="importe_concedido"/>
-        <field name="fecha_solicitud"/>
-        <field name="fecha_resolucion"/>
-        <field name="fecha_justificacion"/>
-        <field name="fecha_limite_justificacion"/>
-        <field name="state"/>
         <field name="stage_id"/>
 
         <templates>
           <t t-name="kanban-box">
-            <t t-set="state" t-value="record.state.raw_value or 'draft'"/>
+            <t t-set="state" t-value="record.stage_id.raw_value or ''"/>
             <div t-attf-class="o_kanban_record oe_kanban_global_click o_kanban_#{state}">
-              <div class="o_kanban_details">
-                <div class="o_kanban_primary_left">
-                  <strong t-esc="record.name.value"/>
-                  <t t-if="record.title.value">
-                    <div class="text-muted" t-esc="record.title.value"/>
-                  </t>
-                </div>
+              
+              <!-- Encabezado principal: título del expediente -->
+              <div class="o_kanban_primary_left">
+                <strong class="fw-bold" t-esc="record.title.value"/>
               </div>
 
-              <div class="o_kanban_tags mt-2">
-                <!-- Etapa como badge (opcional, la columna ya es la etapa) -->
-                <span t-if="record.stage_id.value" class="badge">
-                  <i class="fa fa-columns me-1"/><t t-esc="record.stage_id.value"/>
-                </span>
-                <span t-if="record.partner_id.value" class="badge">
-                  <i class="fa fa-building-o me-1"/><t t-esc="record.partner_id.value"/>
-                </span>
-                <span t-if="record.organismo.value" class="badge">
-                  <i class="fa fa-university me-1"/><t t-esc="record.organismo.value"/>
-                </span>
-                <span t-if="record.convocatoria.value" class="badge">
-                  <i class="fa fa-bullhorn me-1"/><t t-esc="record.convocatoria.value"/>
-                </span>
+              <!-- Solicitante -->
+              <div class="o_kanban_secondary_bottom text-muted mt-1">
+                <i class="fa fa-building-o me-1"/>
+                <t t-esc="record.partner_id.value"/>
               </div>
 
-              <div class="o_kanban_content mt-2">
-                <div>
-                  <span class="fw-bold">Solicitado: </span>
-                  <field name="importe_solicitado"/>
-                </div>
-                <div>
-                  <span class="fw-bold">Concedido: </span>
-                  <field name="importe_concedido"/>
-                </div>
-              </div>
-
-              <div class="o_kanban_footer mt-2 text-muted">
-                <t t-if="record.fecha_solicitud.value">
-                  <i class="fa fa-calendar me-1"/> Solicitud:
-                  <t t-esc="record.fecha_solicitud.value"/>
-                </t>
-                <t t-if="record.fecha_resolucion.value">
-                  <span class="mx-1">&#8226;</span> Resolución:
-                  <t t-esc="record.fecha_resolucion.value"/>
-                </t>
-                <t t-if="record.fecha_justificacion.value">
-                  <span class="mx-1">&#8226;</span> Justificación:
-                  <t t-esc="record.fecha_justificacion.value"/>
-                </t>
-                <t t-if="record.fecha_limite_justificacion.value">
-                  <span class="mx-1">&#8226;</span> Límite just.:
-                  <t t-esc="record.fecha_limite_justificacion.value"/>
-                </t>
-              </div>
             </div>
           </t>
         </templates>
+
       </kanban>
     </field>
   </record>
 </odoo>
+
+
+
