@@ -65,6 +65,12 @@ class OrbaliaProject(models.Model):
         store=False
     )
 
+    grant_call_id = fields.Many2one(
+    "orbalia.grant.call",
+    string="Subvención",
+    index=True,
+    required=True,   
+    )
 
     # Notas / descripción
     nota = fields.Text(string="Descripción de trato")

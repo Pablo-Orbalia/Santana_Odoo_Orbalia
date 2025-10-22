@@ -1,22 +1,24 @@
 <odoo>
 
-  <!-- Formulario en orden específico -->
+  <!-- Formulario -->
   <record id="view_orbalia_project_form" model="ir.ui.view">
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <form string="Subvención">
 
+        <!-- Cabecera: badge con la etapa (texto + etapa) -->
         <header>
           <field name="etapa_display"
-                widget="badge"
-                readonly="1"
-                options="{'no_open': True}"
-                class="o_inline"/>
+                 widget="badge"
+                 readonly="1"
+                 options="{'no_open': True}"
+                 class="o_inline"/>
         </header>
 
         <sheet>
 
+          <!-- Título superior, no editable -->
           <div class="oe_title" name="header_title">
             <h2 class="o_orbalia_titleline">
               <span>Acerca de</span>
@@ -24,16 +26,20 @@
             </h2>
           </div>
 
-          <!-- Detalles generales (igual que Información administrativa) -->
+          <!-- Detalles generales -->
           <group string="Detalles generales" col="2" class="o_group_col_2">
 
-            <!-- Título de la oportunidad (Obligatorio) -->
+            <!-- Título (editable) -->
             <field name="title" string="Título de la oportunidad de venta" required="1"
                    placeholder="Haga clic para añadir"/>
 
-            <!-- Cuenta -->
+            <!-- Cuenta (solicitante) -->
             <field name="partner_id" string="Cuenta" options="{'no_open': False}"
                    placeholder="Haga clic para añadir"/>
+
+            <!-- 🔹 NUEVO: Subvención/Convocatoria a la que pertenece el expediente -->
+            <field name="grant_call_id" string="Subvención"
+                   context="{'default_grant_call_id': grant_call_id}" />
 
             <!-- Descripción del trato -->
             <field name="nota" string="Descripción del trato" colspan="2"
@@ -50,27 +56,27 @@
             <!-- Propietario de trato (Obligatorio) -->
             <field name="propietario_trato_id" string="Propietario de trato" required="1"/>
 
-            <!-- Fecha de cierra prevista -->
+            <!-- Fecha de cierre prevista -->
             <field name="fecha_cierre_prevista" string="Fecha de cierre prevista"
                    placeholder="Haga clic para añadir"/>
 
             <!-- Revisor -->
             <field name="revisor_id" string="Revisor" placeholder="Haga clic para añadir"/>
 
-            <!-- Fecha firma colaboracion -->
+            <!-- Fecha firma colaboración -->
             <field name="fecha_firma_colaboracion" string="Fecha firma colaboración"
                    placeholder="Haga clic para añadir"/>
 
             <!-- URL Drive -->
             <field name="url_drive" string="URL Drive" placeholder="Haga clic para añadir" colspan="2"/>
 
-            <!-- Enlace Colaborar -->
+            <!-- Enlace Colaborador -->
             <field name="enlace_colaborador" string="Enlace Colaborador" placeholder="Haga clic para añadir" colspan="2"/>
 
             <!-- Fecha trato perdido -->
             <field name="fecha_trato_perdido" string="Fecha trato perdido" placeholder="Haga clic para añadir"/>
 
-            <!-- Nombre de la subvención -->
+            <!-- Nombre de la subvención (texto libre) -->
             <field name="nombre_subvencion" string="Nombre de la subvención" placeholder="Haga clic para añadir"/>
 
             <!-- Proveedor -->
@@ -89,7 +95,7 @@
 
           </group>
 
-          <!-- Bloque histórico existente: Fechas/Organismo/Convocatoria -->
+          <!-- Información administrativa (histórico) -->
           <group string="Información administrativa" col="2">
             <field name="organismo"/>
             <field name="convocatoria"/>
@@ -98,7 +104,7 @@
             <field name="fecha_justificacion"/>
             <field name="fecha_limite_justificacion"/>
             <field name="importe_concedido"/>
-            <field name="state" invisible="1"/> <!-- mantenemos el campo oculto -->
+            <field name="state" invisible="1"/>
           </group>
 
         </sheet>
@@ -112,9 +118,9 @@
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <list string="Subvenciones">
-        <field name="name"/>
         <field name="title"/>
         <field name="partner_id"/>
+        <field name="grant_call_id"/>     <!-- 🔹 NUEVO: ver la subvención en la lista -->
         <field name="contacto_primario_id"/>
         <field name="propietario_trato_id"/>
         <field name="importe_solicitado"/>
@@ -129,13 +135,18 @@
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <search>
-        <field name="name" string="Código"/>
         <field name="title" string="Título"/>
         <field name="partner_id" string="Cuenta"/>
+        <field name="grant_call_id" string="Subvención"/>  <!-- 🔹 NUEVO: filtro por subvención -->
         <field name="contacto_primario_id" string="Contacto primario"/>
         <field name="propietario_trato_id" string="Propietario de trato"/>
+
+        <!-- Agrupar -->
         <filter string="Agrupar por etapa" name="group_by_stage" context="{'group_by': 'stage_id'}"/>
+        <filter string="Agrupar por subvención" name="group_by_grant" context="{'group_by': 'grant_call_id'}"/>
+
         <separator/>
+        <!-- Estados administrativos (si los sigues usando) -->
         <filter string="Borrador"   name="draft"    domain="[('state','=','draft')]"/>
         <filter string="Presentada" name="submitted" domain="[('state','=','submitted')]"/>
         <filter string="Concedida"  name="awarded"  domain="[('state','=','awarded')]"/>
@@ -145,7 +156,7 @@
     </field>
   </record>
 
-  <!-- Acción y menús -->
+  <!-- Acción (se mantiene; el método del modelo padre le inyecta domain/context cuando haga falta) -->
   <record id="action_orbalia_project" model="ir.actions.act_window">
     <field name="name">Subvenciones</field>
     <field name="res_model">orbalia.project</field>
@@ -154,6 +165,7 @@
     <field name="context">{'search_default_group_by_stage': 1}</field>
   </record>
 
+  <!-- Menú -->
   <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
   <menuitem id="menu_orbalia_project" name="Subvenciones"
             parent="menu_orbalia_root" action="action_orbalia_project" sequence="10"/>

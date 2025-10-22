@@ -15,6 +15,7 @@
 
         # VISTAS
         'views/project_stage_views.xml',
+        'views/grant_call_views.xml',
         'views/project_views.xml',
         'views/project_grant_views.xml',
         'views/project_kanban.xml',
