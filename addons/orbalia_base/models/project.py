@@ -59,6 +59,13 @@ class OrbaliaProject(models.Model):
         group_expand="_group_expand_stage_id",   # <- aquí
     )
 
+    etapa_display = fields.Char(
+        string="Etapa display",
+        compute="_compute_etapa_display",
+        store=False
+    )
+
+
     # Notas / descripción
     nota = fields.Text(string="Descripción de trato")
 
@@ -128,4 +135,9 @@ class OrbaliaProject(models.Model):
         'order' puede no venir en tu versión; por eso es opcional.
         """
         return stages.search([('active', '=', True)], order="sequence, id")
+
+    @api.depends('stage_id')
+    def _compute_etapa_display(self):
+        for record in self:
+            record.etapa_display = f"Etapa: {record.stage_id.name or ''}"
 
