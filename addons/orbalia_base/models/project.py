@@ -50,13 +50,13 @@ class OrbaliaProject(models.Model):
         ("cancel", "Cancelada"),
     ], string="Estado", default="draft")
 
-    # Etapa kanban
     stage_id = fields.Many2one(
         "orbalia.project.stage",
         string="Etapa",
         index=True,
         required=True,
         default=lambda self: self.env["orbalia.project.stage"].search([], order="sequence", limit=1).id,
+        group_expand="_group_expand_stage_id",   # <- aquí
     )
 
     # Notas / descripción
@@ -119,3 +119,13 @@ class OrbaliaProject(models.Model):
         """Actualiza el display_name para búsquedas y encabezados."""
         for record in self:
             record.display_name = record.title or _("Sin título")
+
+    @api.model
+    def _group_expand_stage_id(self, stages, domain, order=None):
+        """
+        Mostrar todas las etapas activas aunque no tengan expedientes.
+        'stages' es un recordset de orbalia.project.stage.
+        'order' puede no venir en tu versión; por eso es opcional.
+        """
+        return stages.search([('active', '=', True)], order="sequence, id")
+
