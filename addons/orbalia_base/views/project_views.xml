@@ -1,6 +1,8 @@
 <odoo>
 
-  <!-- Formulario -->
+  <!-- =======================
+       FORMULARIO EXPEDIENTE
+       ======================= -->
   <record id="view_orbalia_project_form" model="ir.ui.view">
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
@@ -37,9 +39,10 @@
             <field name="partner_id" string="Cuenta" options="{'no_open': False}"
                    placeholder="Haga clic para añadir"/>
 
-            <!-- 🔹 NUEVO: Subvención/Convocatoria a la que pertenece el expediente -->
-            <field name="grant_call_id" string="Subvención"
-                   context="{'default_grant_call_id': grant_call_id}" />
+            <!-- Subvención/Convocatoria a la que pertenece el expediente -->
+            <!-- No hace falta context aquí; si el registro se crea desde la subvención, el action ya
+                 le inyecta default_grant_call_id, y si no, lo elige el usuario. -->
+            <field name="grant_call_id" string="Subvención"/>
 
             <!-- Descripción del trato -->
             <field name="nota" string="Descripción del trato" colspan="2"
@@ -112,15 +115,17 @@
     </field>
   </record>
 
-  <!-- Lista -->
+  <!-- =======================
+       LISTA EXPEDIENTES
+       ======================= -->
   <record id="view_orbalia_project_tree" model="ir.ui.view">
     <field name="name">orbalia.project.tree</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
-      <list string="Subvenciones">
+      <list string="Expedientes">
         <field name="title"/>
         <field name="partner_id"/>
-        <field name="grant_call_id"/>     <!-- 🔹 NUEVO: ver la subvención en la lista -->
+        <field name="grant_call_id"/>
         <field name="contacto_primario_id"/>
         <field name="propietario_trato_id"/>
         <field name="importe_solicitado"/>
@@ -129,7 +134,9 @@
     </field>
   </record>
 
-  <!-- Búsqueda -->
+  <!-- =======================
+       BÚSQUEDA
+       ======================= -->
   <record id="view_orbalia_project_search" model="ir.ui.view">
     <field name="name">orbalia.project.search</field>
     <field name="model">orbalia.project</field>
@@ -137,16 +144,14 @@
       <search>
         <field name="title" string="Título"/>
         <field name="partner_id" string="Cuenta"/>
-        <field name="grant_call_id" string="Subvención"/>  <!-- 🔹 NUEVO: filtro por subvención -->
+        <field name="grant_call_id" string="Subvención"/>
         <field name="contacto_primario_id" string="Contacto primario"/>
         <field name="propietario_trato_id" string="Propietario de trato"/>
 
-        <!-- Agrupar -->
         <filter string="Agrupar por etapa" name="group_by_stage" context="{'group_by': 'stage_id'}"/>
         <filter string="Agrupar por subvención" name="group_by_grant" context="{'group_by': 'grant_call_id'}"/>
 
         <separator/>
-        <!-- Estados administrativos (si los sigues usando) -->
         <filter string="Borrador"   name="draft"    domain="[('state','=','draft')]"/>
         <filter string="Presentada" name="submitted" domain="[('state','=','submitted')]"/>
         <filter string="Concedida"  name="awarded"  domain="[('state','=','awarded')]"/>
@@ -156,18 +161,31 @@
     </field>
   </record>
 
-  <!-- Acción (se mantiene; el método del modelo padre le inyecta domain/context cuando haga falta) -->
+  <!-- =======================
+       ACCIÓN (uso interno / smart buttons)
+       ======================= -->
   <record id="action_orbalia_project" model="ir.actions.act_window">
-    <field name="name">Subvenciones</field>
+    <field name="name">Expedientes</field>
     <field name="res_model">orbalia.project</field>
     <field name="view_mode">kanban,list,form</field>
     <field name="search_view_id" ref="view_orbalia_project_search"/>
     <field name="context">{'search_default_group_by_stage': 1}</field>
   </record>
 
-  <!-- Menú -->
   <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
-  <menuitem id="menu_orbalia_project" name="Subvenciones"
-            parent="menu_orbalia_root" action="action_orbalia_project" sequence="10"/>
+
+  <!-- Este menú queda oculto para todos los usuarios -->
+  <record id="menu_orbalia_project" model="ir.ui.menu">
+    <field name="active" eval="False"/>
+  </record>
 
 </odoo>
+
+
+
+
+
+
+
+
+

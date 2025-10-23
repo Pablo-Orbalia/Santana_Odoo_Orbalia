@@ -40,7 +40,7 @@ class OrbaliaGrantCall(models.Model):
 
     def action_open_projects_kanban(self):
         """Abre el kanban de expedientes filtrado por esta subvención."""
-        self.ensure_one()
+        # self.ensure_one()
         # lee la acción del pipeline de expedientes (ajusta el XML-ID si fuera distinto)
         action = self.env.ref('orbalia_base.action_orbalia_project').read()[0]
 
