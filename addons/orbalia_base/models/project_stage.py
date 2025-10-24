@@ -34,13 +34,19 @@ class OrbaliaProjectStage(models.Model):
 
     @api.model
     def create(self, vals):
+        # Obliga a indicar convocatoria; evita etapas "globales"
         gc_id = vals.get('grant_call_id') or self.env.context.get('default_grant_call_id')
-        if gc_id:
-            last = self.search([('grant_call_id', '=', gc_id)], order='sequence desc', limit=1)
-            next_seq = (last.sequence or 0) + 10
-            if 'sequence' not in vals or (vals.get('sequence') == 10 and last):
-                vals['sequence'] = next_seq
-            vals.setdefault('grant_call_id', gc_id)
+        if not gc_id:
+            raise ValidationError(_("Debe indicar la convocatoria de la etapa."))
+
+        vals.setdefault('grant_call_id', gc_id)
+
+        # Colocar al final del embudo (sequence determinista por convocatoria)
+        last = self.search([('grant_call_id', '=', gc_id)], order='sequence desc', limit=1)
+        next_seq = (last.sequence or 0) + 10
+        if 'sequence' not in vals or (vals.get('sequence') == 10 and last):
+            vals['sequence'] = next_seq
+
         return super().create(vals)
 
     def write(self, vals):

@@ -40,9 +40,12 @@
                    placeholder="Haga clic para añadir"/>
 
             <!-- Subvención/Convocatoria a la que pertenece el expediente -->
-            <!-- No hace falta context aquí; si el registro se crea desde la subvención, el action ya
-                 le inyecta default_grant_call_id, y si no, lo elige el usuario. -->
-            <field name="grant_call_id" string="Subvención"/>
+            <field name="grant_call_id" string="Subvención" required="1"/>
+
+            <!-- Etapa (limitada a la convocatoria del expediente) -->
+            <field name="stage_id"
+                  options="{'no_create_edit': False, 'no_create': False}"
+                  context="{'default_grant_call_id': grant_call_id}"/>
 
             <!-- Descripción del trato -->
             <field name="nota" string="Descripción del trato" colspan="2"
@@ -152,11 +155,11 @@
         <filter string="Agrupar por subvención" name="group_by_grant" context="{'group_by': 'grant_call_id'}"/>
 
         <separator/>
-        <filter string="Borrador"   name="draft"    domain="[('state','=','draft')]"/>
+        <filter string="Borrador"   name="draft"     domain="[('state','=','draft')]"/>
         <filter string="Presentada" name="submitted" domain="[('state','=','submitted')]"/>
-        <filter string="Concedida"  name="awarded"  domain="[('state','=','awarded')]"/>
-        <filter string="Rechazada"  name="rejected" domain="[('state','=','rejected')]"/>
-        <filter string="Cancelada"  name="cancel"   domain="[('state','=','cancel')]"/>
+        <filter string="Concedida"  name="awarded"   domain="[('state','=','awarded')]"/>
+        <filter string="Rechazada"  name="rejected"  domain="[('state','=','rejected')]"/>
+        <filter string="Cancelada"  name="cancel"    domain="[('state','=','cancel')]"/>
       </search>
     </field>
   </record>
@@ -180,12 +183,3 @@
   </record>
 
 </odoo>
-
-
-
-
-
-
-
-
-

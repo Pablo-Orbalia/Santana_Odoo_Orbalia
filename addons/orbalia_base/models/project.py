@@ -53,10 +53,10 @@ class OrbaliaProject(models.Model):
     stage_id = fields.Many2one(
         "orbalia.project.stage",
         string="Etapa",
+        domain="[('grant_call_id', '=', grant_call_id)]",
         index=True,
         required=True,
-        default=lambda self: self.env["orbalia.project.stage"].search([], order="sequence", limit=1).id,
-        group_expand="_group_expand_stage_id",   # <- aquí
+        group_expand="_group_expand_stage_id",
     )
 
     etapa_display = fields.Char(
@@ -136,11 +136,31 @@ class OrbaliaProject(models.Model):
     @api.model
     def _group_expand_stage_id(self, stages, domain, order=None):
         """
-        Mostrar todas las etapas activas aunque no tengan expedientes.
-        'stages' es un recordset de orbalia.project.stage.
-        'order' puede no venir en tu versión; por eso es opcional.
+        Pintar SOLO las columnas (etapas) de la(s) convocatoria(s) visibles.
+        Si no hay convocatoria en domain/context, no devolvemos columnas (evita "globales").
         """
-        return stages.search([('active', '=', True)], order="sequence, id")
+        gc_ids = set()
+
+        # 1) grant_call_id desde el domain del action
+        for d in domain or []:
+            if isinstance(d, (list, tuple)) and len(d) >= 3 and d[0] == 'grant_call_id' and d[1] in ('=', 'in'):
+                if d[1] == '=':
+                    gc_ids.add(d[2])
+                elif d[1] == 'in' and isinstance(d[2], (list, tuple, set)):
+                    gc_ids.update(d[2])
+
+        # 2) Si no vino en domain, intentar por contexto (abrir desde la subvención)
+        if not gc_ids:
+            ctx_gc = self.env.context.get('default_grant_call_id')
+            if ctx_gc:
+                gc_ids.add(ctx_gc)
+
+        # 3) Sin convocatoria -> no pintamos columnas
+        if not gc_ids:
+            return stages.browse()
+
+        dom = [('active', '=', True), ('grant_call_id', 'in', list(gc_ids))]
+        return stages.search(dom, order="sequence, id")
 
     @api.depends('stage_id')
     def _compute_etapa_display(self):
