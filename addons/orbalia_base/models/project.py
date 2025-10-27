@@ -50,6 +50,15 @@ class OrbaliaProject(models.Model):
         ("cancel", "Cancelada"),
     ], string="Estado", default="draft")
 
+    # Embudo / Convocatoria
+    grant_call_id = fields.Many2one(
+        "orbalia.grant.call",
+        string="Subvención",
+        index=True,
+        required=True,
+    )
+
+    # Etapa (columna Kanban)
     stage_id = fields.Many2one(
         "orbalia.project.stage",
         string="Etapa",
@@ -57,19 +66,14 @@ class OrbaliaProject(models.Model):
         index=True,
         required=True,
         group_expand="_group_expand_stage_id",
+        ondelete="restrict",
     )
 
+    # Display auxiliar
     etapa_display = fields.Char(
         string="Etapa display",
         compute="_compute_etapa_display",
         store=False
-    )
-
-    grant_call_id = fields.Many2one(
-    "orbalia.grant.call",
-    string="Subvención",
-    index=True,
-    required=True,   
     )
 
     # Notas / descripción
@@ -115,12 +119,10 @@ class OrbaliaProject(models.Model):
     def action_reset(self):
         self.write({"state": "draft"})
 
-
     # -----------------------
-    # NUEVA LÓGICA: mostrar "title" en lugar de "name"
+    # Mostrar "title" como display_name
     # -----------------------
     def name_get(self):
-        """Hace que el registro se muestre con el título en lugar del código interno."""
         result = []
         for record in self:
             display = record.title or _("Sin título")
@@ -129,41 +131,49 @@ class OrbaliaProject(models.Model):
 
     @api.depends('title')
     def _compute_display_name(self):
-        """Actualiza el display_name para búsquedas y encabezados."""
         for record in self:
             record.display_name = record.title or _("Sin título")
 
+    # -----------------------
+    # Group expand estable por convocatoria
+    # -----------------------
     @api.model
     def _group_expand_stage_id(self, stages, domain, order=None):
         """
-        Pintar SOLO las columnas (etapas) de la(s) convocatoria(s) visibles.
-        Si no hay convocatoria en domain/context, no devolvemos columnas (evita "globales").
+        Devuelve SOLO las etapas de la(s) convocatoria(s) visibles y en orden estable.
+        - Detección robusta de grant_call_id desde domain y contexto (incluye active_id/active_ids).
+        - Orden estable por grant_call_id, sequence, id para evitar "baile" si hay varias convocatorias.
         """
         gc_ids = set()
 
-        # 1) grant_call_id desde el domain del action
-        for d in domain or []:
-            if isinstance(d, (list, tuple)) and len(d) >= 3 and d[0] == 'grant_call_id' and d[1] in ('=', 'in'):
-                if d[1] == '=':
-                    gc_ids.add(d[2])
-                elif d[1] == 'in' and isinstance(d[2], (list, tuple, set)):
-                    gc_ids.update(d[2])
+        # 1) grant_call_id desde el domain
+        for token in (domain or []):
+            if isinstance(token, (list, tuple)) and len(token) >= 3:
+                left, op, right = token[0], token[1], token[2]
+                if left == 'grant_call_id' and op in ('=', 'in'):
+                    if op == '=':
+                        gc_ids.add(right)
+                    elif op == 'in' and isinstance(right, (list, tuple, set)):
+                        gc_ids.update(right)
 
-        # 2) Si no vino en domain, intentar por contexto (abrir desde la subvención)
-        if not gc_ids:
-            ctx_gc = self.env.context.get('default_grant_call_id')
-            if ctx_gc:
-                gc_ids.add(ctx_gc)
+        # 2) Contexto
+        ctx = self.env.context
+        for key in ('default_grant_call_id', 'grant_call_id', 'active_id'):
+            if ctx.get(key):
+                gc_ids.add(ctx[key])
+        active_ids = ctx.get('active_ids') or []
+        if isinstance(active_ids, (list, tuple, set)):
+            gc_ids.update(active_ids)
 
         # 3) Sin convocatoria -> no pintamos columnas
         if not gc_ids:
             return stages.browse()
 
+        # 4) Etapas activas de esas convocatorias, orden estable
         dom = [('active', '=', True), ('grant_call_id', 'in', list(gc_ids))]
-        return stages.search(dom, order="sequence, id")
+        return stages.search(dom, order="grant_call_id, sequence, id")
 
     @api.depends('stage_id')
     def _compute_etapa_display(self):
         for record in self:
             record.etapa_display = f"Etapa: {record.stage_id.name or ''}"
-

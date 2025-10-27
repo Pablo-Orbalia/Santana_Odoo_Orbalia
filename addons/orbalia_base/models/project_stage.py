@@ -2,19 +2,21 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
+
 class OrbaliaProjectStage(models.Model):
     _name = 'orbalia.project.stage'
     _description = 'Etapa de expediente'
-    _order = 'sequence, id'
+    _order = 'grant_call_id, sequence, id'
     _rec_name = 'name'
 
+    # -----------------------
+    # CAMPOS PRINCIPALES
+    # -----------------------
     name = fields.Char(string='Nombre', required=True)
     sequence = fields.Integer(string='Secuencia', default=10, index=True)
     fold = fields.Boolean(string='Plegada por defecto')
     color = fields.Integer(string='Color')
     active = fields.Boolean(default=True)
-
-    # 🔧 Nuevo campo para cubrir referencias existentes
     description = fields.Text(string='Descripción')
 
     grant_call_id = fields.Many2one(
@@ -22,7 +24,7 @@ class OrbaliaProjectStage(models.Model):
         string='Convocatoria',
         required=True,
         ondelete='cascade',
-        help='Embudo/convocatoria a la que pertenece esta etapa.',
+        help='Embudo o convocatoria a la que pertenece esta etapa.',
     )
 
     _sql_constraints = [
@@ -32,41 +34,58 @@ class OrbaliaProjectStage(models.Model):
          'Ya existe una etapa con esa secuencia en esta convocatoria.'),
     ]
 
+    # -----------------------
+    # UTILIDADES INTERNAS
+    # -----------------------
+    def _next_sequence_for_call(self, grant_call_id):
+        """Devuelve la siguiente secuencia libre (última +10)."""
+        last = self.search([('grant_call_id', '=', grant_call_id)], order='sequence desc', limit=1)
+        return (last.sequence or 0) + 10
+
+    def _context_grant_call_id(self):
+        """Obtiene el ID de convocatoria desde vals o contexto."""
+        return (
+            self.env.context.get('default_grant_call_id')
+            or self.env.context.get('grant_call_id')
+            or self.env.context.get('active_id')
+        )
+
+    # -----------------------
+    # CREATE / WRITE / NAME_CREATE
+    # -----------------------
     @api.model
     def create(self, vals):
-        # Obliga a indicar convocatoria; evita etapas "globales"
-        gc_id = vals.get('grant_call_id') or self.env.context.get('default_grant_call_id')
+        gc_id = vals.get('grant_call_id') or self._context_grant_call_id()
         if not gc_id:
             raise ValidationError(_("Debe indicar la convocatoria de la etapa."))
 
         vals.setdefault('grant_call_id', gc_id)
 
-        # Colocar al final del embudo (sequence determinista por convocatoria)
-        last = self.search([('grant_call_id', '=', gc_id)], order='sequence desc', limit=1)
-        next_seq = (last.sequence or 0) + 10
-        if 'sequence' not in vals or (vals.get('sequence') == 10 and last):
-            vals['sequence'] = next_seq
+        # Fija secuencia determinista al final del embudo
+        if not vals.get('sequence') or vals.get('sequence') in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9):
+            vals['sequence'] = self._next_sequence_for_call(gc_id)
 
         return super().create(vals)
 
     def write(self, vals):
+        """Normaliza secuencia cuando se reordena desde el Kanban."""
         for rec in self:
-            new_gc = vals.get('grant_call_id', rec.grant_call_id.id)
-            new_seq = vals.get('sequence', rec.sequence)
-            if 'grant_call_id' in vals and new_gc != rec.grant_call_id.id:
-                last = self.search([('grant_call_id', '=', new_gc)], order='sequence desc', limit=1)
-                vals.setdefault('sequence', (last.sequence or 0) + 10)
-            if 'sequence' in vals:
-                if new_seq in (None, 0):
-                    last = self.search([('grant_call_id', '=', new_gc)], order='sequence desc', limit=1)
-                    vals['sequence'] = (last.sequence or 0) + 10
-                else:
-                    clash = self.search([
-                        ('id', '!=', rec.id),
-                        ('grant_call_id', '=', new_gc),
-                        ('sequence', '=', new_seq),
-                    ], limit=1)
-                    if clash:
-                        last = self.search([('grant_call_id', '=', new_gc)], order='sequence desc', limit=1)
-                        vals['sequence'] = (last.sequence or 0) + 10
+            gc_id = vals.get('grant_call_id', rec.grant_call_id.id)
+            seq = vals.get('sequence')
+            if seq and seq < 10:
+                vals['sequence'] = self._next_sequence_for_call(gc_id)
         return super().write(vals)
+
+    @api.model
+    def name_create(self, name):
+        """Creación rápida (desde +Etapa en el Kanban)."""
+        gc_id = self._context_grant_call_id()
+        if not gc_id:
+            raise ValidationError(_("Debe indicar la convocatoria de la etapa."))
+        vals = {
+            'name': name,
+            'grant_call_id': gc_id,
+            'sequence': self._next_sequence_for_call(gc_id),
+        }
+        record = self.create(vals)
+        return (record.id, record.name)

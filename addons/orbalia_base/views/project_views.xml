@@ -1,185 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-  <!-- =======================
-       FORMULARIO EXPEDIENTE
-       ======================= -->
-  <record id="view_orbalia_project_form" model="ir.ui.view">
+  <!-- VISTA KANBAN -->
+  <record id="orbalia_project_kanban" model="ir.ui.view">
+    <field name="name">orbalia.project.kanban</field>
+    <field name="model">orbalia.project</field>
+    <field name="arch" type="xml">
+      <kanban class="o_kanban_small_column o_kanban_grouped"
+              default_group_by="stage_id">
+
+        <field name="title"/>
+        <field name="partner_id"/>
+        <field name="stage_id"/>
+        <field name="grant_call_id"/>
+
+        <templates>
+          <t t-name="kanban-box">
+            <t t-set="state" t-value="record.stage_id.raw_value or ''"/>
+            <div t-attf-class="o_kanban_record oe_kanban_global_click o_kanban_#{state}">
+              <div class="o_kanban_primary_left">
+                <strong class="fw-bold" t-esc="record.title.value"/>
+              </div>
+              <div class="o_kanban_secondary_bottom text-muted mt-1">
+                <i class="fa fa-building-o me-1"/>
+                <t t-esc="record.partner_id.value"/>
+              </div>
+            </div>
+          </t>
+        </templates>
+
+      </kanban>
+    </field>
+  </record>
+
+  <!-- VISTA LIST -->
+  <record id="orbalia_project_list" model="ir.ui.view">
+    <field name="name">orbalia.project.list</field>
+    <field name="model">orbalia.project</field>
+    <field name="arch" type="xml">
+      <list string="Subvenciones">
+        <field name="title"/>
+        <field name="partner_id"/>
+        <field name="grant_call_id"/>
+        <field name="stage_id"/>
+        <field name="state"/>
+        <field name="importe_solicitado"/>
+        <field name="importe_concedido"/>
+        <field name="fecha_solicitud"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- VISTA FORM -->
+  <record id="orbalia_project_form" model="ir.ui.view">
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <form string="Subvención">
-
-        <!-- Cabecera: badge con la etapa (texto + etapa) -->
-        <header>
-          <field name="etapa_display"
-                 widget="badge"
-                 readonly="1"
-                 options="{'no_open': True}"
-                 class="o_inline"/>
-        </header>
-
         <sheet>
-
-          <!-- Título superior, no editable -->
-          <div class="oe_title" name="header_title">
-            <h2 class="o_orbalia_titleline">
-              <span>Acerca de</span>
-              <field name="title" nolabel="1" readonly="1"/>
-            </h2>
-          </div>
-
-          <!-- Detalles generales -->
-          <group string="Detalles generales" col="2" class="o_group_col_2">
-
-            <!-- Título (editable) -->
-            <field name="title" string="Título de la oportunidad de venta" required="1"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Cuenta (solicitante) -->
-            <field name="partner_id" string="Cuenta" options="{'no_open': False}"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Subvención/Convocatoria a la que pertenece el expediente -->
-            <field name="grant_call_id" string="Subvención" required="1"/>
-
-            <!-- Etapa (limitada a la convocatoria del expediente) -->
-            <field name="stage_id"
-                  options="{'no_create_edit': False, 'no_create': False}"
-                  context="{'default_grant_call_id': grant_call_id}"/>
-
-            <!-- Descripción del trato -->
-            <field name="nota" string="Descripción del trato" colspan="2"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Valor del trato (Obligatorio) -->
-            <field name="importe_solicitado" string="Valor de trato" required="1"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Contacto Primario (Obligatorio) -->
-            <field name="contacto_primario_id" string="Contacto primario" required="1"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Propietario de trato (Obligatorio) -->
-            <field name="propietario_trato_id" string="Propietario de trato" required="1"/>
-
-            <!-- Fecha de cierre prevista -->
-            <field name="fecha_cierre_prevista" string="Fecha de cierre prevista"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Revisor -->
-            <field name="revisor_id" string="Revisor" placeholder="Haga clic para añadir"/>
-
-            <!-- Fecha firma colaboración -->
-            <field name="fecha_firma_colaboracion" string="Fecha firma colaboración"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- URL Drive -->
-            <field name="url_drive" string="URL Drive" placeholder="Haga clic para añadir" colspan="2"/>
-
-            <!-- Enlace Colaborador -->
-            <field name="enlace_colaborador" string="Enlace Colaborador" placeholder="Haga clic para añadir" colspan="2"/>
-
-            <!-- Fecha trato perdido -->
-            <field name="fecha_trato_perdido" string="Fecha trato perdido" placeholder="Haga clic para añadir"/>
-
-            <!-- Nombre de la subvención (texto libre) -->
-            <field name="nombre_subvencion" string="Nombre de la subvención" placeholder="Haga clic para añadir"/>
-
-            <!-- Proveedor -->
-            <field name="proveedor_id" string="Proveedor" placeholder="Haga clic para añadir"/>
-
-            <!-- Deal padre -->
-            <field name="deal_padre_id" string="Deal padre" placeholder="Haga clic para añadir"/>
-
-            <!-- Información acuerdos -->
-            <field name="info_acuerdos" string="Información acuerdos" colspan="2"
-                   placeholder="Haga clic para añadir"/>
-
-            <!-- Punto Solicitud -->
-            <field name="punto_solicitud" string="Punto Solicitud" colspan="2"
-                   placeholder="Haga clic para añadir"/>
-
+          <group>
+            <group>
+              <field name="title"/>
+              <field name="partner_id"/>
+              <field name="contacto_primario_id" domain="[('parent_id','=',partner_id)]"/>
+              <field name="grant_call_id"/>
+              <field name="stage_id" domain="[('grant_call_id','=',grant_call_id)]"/>
+              <field name="state"/>
+            </group>
+            <group>
+              <field name="importe_solicitado"/>
+              <field name="importe_concedido"/>
+              <field name="fecha_solicitud"/>
+              <field name="fecha_resolucion"/>
+              <field name="fecha_justificacion"/>
+              <field name="fecha_limite_justificacion"/>
+            </group>
           </group>
-
-          <!-- Información administrativa (histórico) -->
-          <group string="Información administrativa" col="2">
-            <field name="organismo"/>
-            <field name="convocatoria"/>
-            <field name="fecha_solicitud"/>
-            <field name="fecha_resolucion"/>
-            <field name="fecha_justificacion"/>
-            <field name="fecha_limite_justificacion"/>
-            <field name="importe_concedido"/>
-            <field name="state" invisible="1"/>
-          </group>
-
+          <notebook>
+            <page string="Información">
+              <group>
+                <field name="organismo"/>
+                <field name="convocatoria"/>
+                <field name="nombre_subvencion"/>
+                <field name="punto_solicitud"/>
+                <field name="url_drive"/>
+                <field name="enlace_colaborador"/>
+              </group>
+            </page>
+            <page string="Descripción">
+              <field name="nota" nolabel="1"/>
+            </page>
+          </notebook>
         </sheet>
       </form>
     </field>
   </record>
 
-  <!-- =======================
-       LISTA EXPEDIENTES
-       ======================= -->
-  <record id="view_orbalia_project_tree" model="ir.ui.view">
-    <field name="name">orbalia.project.tree</field>
-    <field name="model">orbalia.project</field>
-    <field name="arch" type="xml">
-      <list string="Expedientes">
-        <field name="title"/>
-        <field name="partner_id"/>
-        <field name="grant_call_id"/>
-        <field name="contacto_primario_id"/>
-        <field name="propietario_trato_id"/>
-        <field name="importe_solicitado"/>
-        <field name="stage_id"/>
-      </list>
-    </field>
-  </record>
-
-  <!-- =======================
-       BÚSQUEDA
-       ======================= -->
-  <record id="view_orbalia_project_search" model="ir.ui.view">
-    <field name="name">orbalia.project.search</field>
-    <field name="model">orbalia.project</field>
-    <field name="arch" type="xml">
-      <search>
-        <field name="title" string="Título"/>
-        <field name="partner_id" string="Cuenta"/>
-        <field name="grant_call_id" string="Subvención"/>
-        <field name="contacto_primario_id" string="Contacto primario"/>
-        <field name="propietario_trato_id" string="Propietario de trato"/>
-
-        <filter string="Agrupar por etapa" name="group_by_stage" context="{'group_by': 'stage_id'}"/>
-        <filter string="Agrupar por subvención" name="group_by_grant" context="{'group_by': 'grant_call_id'}"/>
-
-        <separator/>
-        <filter string="Borrador"   name="draft"     domain="[('state','=','draft')]"/>
-        <filter string="Presentada" name="submitted" domain="[('state','=','submitted')]"/>
-        <filter string="Concedida"  name="awarded"   domain="[('state','=','awarded')]"/>
-        <filter string="Rechazada"  name="rejected"  domain="[('state','=','rejected')]"/>
-        <filter string="Cancelada"  name="cancel"    domain="[('state','=','cancel')]"/>
-      </search>
-    </field>
-  </record>
-
-  <!-- =======================
-       ACCIÓN (uso interno / smart buttons)
-       ======================= -->
+  <!-- ACCIÓN (kanban,list,form) -->
   <record id="action_orbalia_project" model="ir.actions.act_window">
-    <field name="name">Expedientes</field>
+    <field name="name">Subvenciones</field>
     <field name="res_model">orbalia.project</field>
     <field name="view_mode">kanban,list,form</field>
-    <field name="search_view_id" ref="view_orbalia_project_search"/>
-    <field name="context">{'search_default_group_by_stage': 1}</field>
+    <field name="views" eval="[
+      [ref('orbalia_project_kanban'), 'kanban'],
+      [ref('orbalia_project_list'), 'list'],
+      [ref('orbalia_project_form'), 'form']
+    ]"/>
+    <field name="domain">[('grant_call_id', '=', context.get('active_id'))]</field>
+    <field name="context">
+      {
+        "default_grant_call_id": context.get("active_id"),
+        "group_by": "stage_id"
+      }
+    </field>
   </record>
 
-  <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
-
-  <!-- Este menú queda oculto para todos los usuarios -->
-  <record id="menu_orbalia_project" model="ir.ui.menu">
-    <field name="active" eval="False"/>
-  </record>
+  <!-- MENÚ (si no quieres menú, elimina todo este bloque) -->
+  <menuitem id="menu_orbalia_projects"
+            name="Subvenciones"
+            parent="base.menu_administration"
+            action="action_orbalia_project"/>
 
 </odoo>
