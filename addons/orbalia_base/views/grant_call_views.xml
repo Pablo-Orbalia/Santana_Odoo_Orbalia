@@ -1,20 +1,4 @@
 <odoo>
-  <!-- Lista -->
-  <record id="view_grant_call_list" model="ir.ui.view">
-    <field name="name">orbalia.grant.call.list</field>
-    <field name="model">orbalia.grant.call</field>
-    <field name="arch" type="xml">
-      <list string="Subvenciones en tramitación">
-        <field name="name"/>
-        <field name="organismo"/>
-        <field name="anio"/>
-        <field name="estado"/>
-        <field name="fecha_publicacion"/>
-        <field name="fecha_limite"/>
-        <field name="project_count" string="Expedientes"/>
-      </list>
-    </field>
-  </record>
 
   <!-- Kanban (landing) -->
   <record id="view_grant_call_kanban" model="ir.ui.view">
@@ -30,8 +14,8 @@
 
         <templates>
           <t t-name="kanban-box">
-            <!-- Clic en toda la tarjeta -> abre kanban de expedientes filtrado -->
-            <a type="object" name="action_open_projects_kanban" class="o_kanban_record">
+            <!-- CLIC EN LA TARJETA => ABRE FORMULARIO -->
+            <div class="o_kanban_record oe_kanban_global_click">
               <div class="o_kanban_details">
                 <strong t-esc="record.name.value"/>
                 <div class="text-muted">
@@ -41,16 +25,32 @@
                   <t t-esc="record.anio.value"/>
                 </div>
               </div>
+
               <div class="o_kanban_content mt-2">
-                <span class="badge"><t t-esc="record.estado.value"/></span>
-                <span class="ms-2">Expedientes: <t t-esc="record.project_count.value"/></span>
+                <span class="badge">
+                  <t t-esc="record.estado.value"/>
+                </span>
+                <span class="ms-2">
+                  Expedientes: <t t-esc="record.project_count.value"/>
+                </span>
               </div>
-            </a>
+
+              <!-- BOTÓN SECUNDARIO: VER EXPEDIENTES (no bloquea el clic global) -->
+              <div class="oe_kanban_bottom_right mt-2">
+                <button type="object"
+                        name="action_open_projects_kanban"
+                        class="btn btn-link o_kanban_manage_button"
+                        title="Ver expedientes">
+                  Ver expedientes
+                </button>
+              </div>
+            </div>
           </t>
         </templates>
       </kanban>
     </field>
   </record>
+
 
   <!-- Formulario -->
   <record id="view_grant_call_form" model="ir.ui.view">
@@ -62,7 +62,7 @@
           <button name="action_open_projects_kanban"
                   type="object"
                   class="oe_highlight"
-                  string="Ver expedientes (kanban)"/>
+                  string="Ver expedientes"/>
         </header>
         <sheet>
 

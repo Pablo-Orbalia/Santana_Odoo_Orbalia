@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 from ast import literal_eval
+
 
 class OrbaliaGrantCall(models.Model):
     _name = "orbalia.grant.call"
@@ -61,7 +63,7 @@ class OrbaliaGrantCall(models.Model):
         """
         self.ensure_one()
 
-        # Intentamos leer la acción estándar del módulo; si no existe, construimos una ad-hoc
+        # Intentamos leer la acción estándar; si no existe, construimos una ad-hoc
         act = self.env.ref('orbalia_base.action_orbalia_project', raise_if_not_found=False)
         action = (act.read()[0]) if act else {
             'type': 'ir.actions.act_window',
@@ -78,10 +80,6 @@ class OrbaliaGrantCall(models.Model):
             except Exception:
                 raw_ctx = {}
 
-        # Contexto mínimo imprescindible:
-        # - default_grant_call_id: para nuevas tarjetas
-        # - search_default_group_by_stage: agrupar por columnas (etapas)
-        # - (opcional) default_stage_id=False para evitar herencias indeseadas desde otras vistas
         raw_ctx.update({
             'default_grant_call_id': self.id,
             'search_default_group_by_stage': 1,
@@ -89,13 +87,28 @@ class OrbaliaGrantCall(models.Model):
         })
         action['context'] = raw_ctx
 
-        # Filtro por la convocatoria actual (evita mezclar expedientes de otras convocatorias)
+        # Filtro por la convocatoria actual
         action['domain'] = [('grant_call_id', '=', self.id)]
 
         # Título más informativo
         action['name'] = _("Expedientes · %s") % (self.display_name,)
 
-        # Aseguramos el modo de vistas por si la acción original no lo tenía
+        # Asegurar modos de vista
         action['view_mode'] = action.get('view_mode') or 'kanban,tree,form'
 
         return action
+
+    # -----------------------
+    # RESTRICCIÓN DE BORRADO
+    # -----------------------
+    def unlink(self):
+        """
+        Impide eliminar la subvención si tiene expedientes asociados.
+        """
+        for rec in self:
+            if rec.project_ids:
+                # Mensaje claro para usuario final
+                raise ValidationError(_(
+                    "No se puede eliminar la subvención '%s' porque tiene %d expedientes asociados."
+                ) % (rec.display_name, len(rec.project_ids)))
+        return super().unlink()

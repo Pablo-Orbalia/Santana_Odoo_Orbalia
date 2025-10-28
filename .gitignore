@@ -3,3 +3,4 @@
 config/odoo.conf
 restore_point_20251010_1221
 restore_point_20251013_1001
+addons/orbalia_base/models/__pycache__
