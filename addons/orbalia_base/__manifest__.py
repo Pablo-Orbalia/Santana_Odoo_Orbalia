@@ -10,6 +10,7 @@
 
         # DATA
         'data/sequence.xml',
+        'data/grant_state_data.xml',
         # (opcional) etapas por defecto:
         #'data/project_stage_data.xml',
 

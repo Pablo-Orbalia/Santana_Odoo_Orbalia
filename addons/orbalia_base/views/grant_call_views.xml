@@ -1,20 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-  <!-- Kanban (landing) -->
+  <!-- Kanban: agrupar por Many2one para mostrar todas las columnas -->
   <record id="view_grant_call_kanban" model="ir.ui.view">
     <field name="name">orbalia.grant.call.kanban</field>
     <field name="model">orbalia.grant.call</field>
     <field name="arch" type="xml">
-      <kanban default_group_by="estado" class="o_kanban_small_column">
+      <kanban default_group_by="state_stage_id" class="o_kanban_small_column">
         <field name="name"/>
         <field name="organismo"/>
         <field name="anio"/>
         <field name="estado"/>
+        <field name="state_stage_id"/>
         <field name="project_count"/>
 
         <templates>
           <t t-name="kanban-box">
-            <!-- CLIC EN LA TARJETA => ABRE FORMULARIO -->
             <div class="o_kanban_record oe_kanban_global_click">
               <div class="o_kanban_details">
                 <strong t-esc="record.name.value"/>
@@ -27,20 +28,13 @@
               </div>
 
               <div class="o_kanban_content mt-2">
-                <span class="badge">
-                  <t t-esc="record.estado.value"/>
-                </span>
-                <span class="ms-2">
-                  Expedientes: <t t-esc="record.project_count.value"/>
-                </span>
+                <span class="badge"><t t-esc="record.estado.value"/></span>
+                <span class="ms-2">Expedientes: <t t-esc="record.project_count.value"/></span>
               </div>
 
-              <!-- BOTÓN SECUNDARIO: VER EXPEDIENTES (no bloquea el clic global) -->
               <div class="oe_kanban_bottom_right mt-2">
-                <button type="object"
-                        name="action_open_projects_kanban"
-                        class="btn btn-link o_kanban_manage_button"
-                        title="Ver expedientes">
+                <button type="object" name="action_open_projects_kanban"
+                        class="btn btn-link o_kanban_manage_button" title="Ver expedientes">
                   Ver expedientes
                 </button>
               </div>
@@ -51,31 +45,36 @@
     </field>
   </record>
 
+  <!-- Lista (opcional) -->
+  <record id="view_grant_call_list" model="ir.ui.view">
+    <field name="name">orbalia.grant.call.list</field>
+    <field name="model">orbalia.grant.call</field>
+    <field name="arch" type="xml">
+      <list string="Subvenciones">
+        <field name="name"/>
+        <field name="organismo"/>
+        <field name="anio"/>
+        <field name="estado"/>
+        <field name="project_count" string="Expedientes"/>
+      </list>
+    </field>
+  </record>
 
-  <!-- Formulario -->
+  <!-- Formulario (igual que tenías) -->
   <record id="view_grant_call_form" model="ir.ui.view">
     <field name="name">orbalia.grant.call.form</field>
     <field name="model">orbalia.grant.call</field>
     <field name="arch" type="xml">
       <form string="Subvención">
         <header>
-          <button name="action_open_projects_kanban"
-                  type="object"
-                  class="oe_highlight"
-                  string="Ver expedientes"/>
+          <button name="action_open_projects_kanban" type="object" class="oe_highlight" string="Ver expedientes"/>
         </header>
         <sheet>
-
-          <!-- Smart button -->
           <div class="oe_button_box" name="button_box">
-            <button type="object"
-                    name="action_open_projects_kanban"
-                    class="oe_stat_button"
-                    icon="fa-tasks">
+            <button type="object" name="action_open_projects_kanban" class="oe_stat_button" icon="fa-tasks">
               <field name="project_count" widget="statinfo" string="Expedientes"/>
             </button>
           </div>
-
           <group string="Subvención" col="2">
             <field name="name"/>
             <field name="organismo"/>
@@ -85,46 +84,21 @@
             <field name="fecha_limite"/>
             <field name="notas" colspan="2"/>
           </group>
-
-          <!-- Pestaña de Expedientes (One2many a orbalia.project) -->
-          <notebook>
-            <page string="Expedientes">
-              <field name="project_ids" context="{'default_grant_call_id': id}">
-                <!-- Odoo 17: usar <list>, no <tree> -->
-                <list editable="bottom">
-                  <field name="title"/>
-                  <field name="partner_id"/>
-                  <field name="stage_id"/>
-                </list>
-                <form string="Expediente">
-                  <sheet>
-                    <group col="2">
-                      <field name="title"/>
-                      <field name="partner_id"/>
-                      <field name="stage_id"/>
-                    </group>
-                  </sheet>
-                </form>
-              </field>
-            </page>
-          </notebook>
-
         </sheet>
       </form>
     </field>
   </record>
 
-  <!-- Acción landing -->
+  <!-- Acción sin domain restrictivo -->
   <record id="action_grant_call" model="ir.actions.act_window">
     <field name="name">Subvenciones</field>
     <field name="res_model">orbalia.grant.call</field>
     <field name="view_mode">kanban,list,form</field>
     <field name="context">{}</field>
-    <field name="domain">[('estado','in',('abierta','cerrada','resuelta'))]</field>
   </record>
 
-  <!-- Menú principal -->
   <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
   <menuitem id="menu_orbalia_grant_calls" name="Subvenciones"
             parent="menu_orbalia_root" action="action_grant_call" sequence="5"/>
+
 </odoo>
