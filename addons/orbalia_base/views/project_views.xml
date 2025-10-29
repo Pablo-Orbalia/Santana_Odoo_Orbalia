@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-  <!-- VISTA KANBAN -->
+  <!-- ================
+       VISTA KANBAN
+       ================ -->
   <record id="orbalia_project_kanban" model="ir.ui.view">
     <field name="name">orbalia.project.kanban</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <kanban class="o_kanban_small_column o_kanban_grouped"
               default_group_by="stage_id">
-
         <field name="title"/>
         <field name="partner_id"/>
         <field name="stage_id"/>
@@ -28,12 +29,13 @@
             </div>
           </t>
         </templates>
-
       </kanban>
     </field>
   </record>
 
-  <!-- VISTA LIST -->
+  <!-- ================
+       VISTA LISTA
+       ================ -->
   <record id="orbalia_project_list" model="ir.ui.view">
     <field name="name">orbalia.project.list</field>
     <field name="model">orbalia.project</field>
@@ -41,62 +43,102 @@
       <list string="Subvenciones">
         <field name="title"/>
         <field name="partner_id"/>
-        <field name="grant_call_id"/>
-        <field name="stage_id"/>
-        <field name="state"/>
-        <field name="importe_solicitado"/>
+        <field name="grant_call_id" string="Subvención"/>
+        <field name="stage_id"     string="Etapa"/>
+        <field name="state"        string="Estado"/>
+        <field name="importe_solicitado" string="Valor de trato"/>
         <field name="importe_concedido"/>
         <field name="fecha_solicitud"/>
       </list>
     </field>
   </record>
 
-  <!-- VISTA FORM -->
+  <!-- ================
+       VISTA FORMULARIO (UNA COLUMNA)
+       ================ -->
   <record id="orbalia_project_form" model="ir.ui.view">
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
       <form string="Subvención">
         <sheet>
-          <group>
-            <group>
-              <field name="title"/>
-              <field name="partner_id"/>
-              <field name="contacto_primario_id" domain="[('parent_id','=',partner_id)]"/>
-              <field name="grant_call_id"/>
-              <field name="stage_id" domain="[('grant_call_id','=',grant_call_id)]"/>
-              <field name="state"/>
-            </group>
-            <group>
-              <field name="importe_solicitado"/>
-              <field name="importe_concedido"/>
-              <field name="fecha_solicitud"/>
-              <field name="fecha_resolucion"/>
-              <field name="fecha_justificacion"/>
-              <field name="fecha_limite_justificacion"/>
-            </group>
-          </group>
+
+          <!-- Cabecera: copia NO editable del título -->
+          <div class="oe_title">
+            <label for="title" string="Título de la oportunidad de venta"/>
+            <h1><field name="title" readonly="1"/></h1>
+          </div>
+
+          <!-- Encabezado plegable (sin JS adicional) -->
+          <div class="o_form_sheet_bg">
+            <div class="o_inner_group mt16 mb8">
+              <h3>
+                <a href="#"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#datos_generales_block"
+                  aria-expanded="true"
+                  aria-controls="datos_generales_block"
+                  class="o-orbalia-toggle text-decoration-none text-dark">
+                  <i class="fa fa-chevron-down me-2"></i>
+                  <span class="fw-bold">Detalles generales</span>
+                </a>
+              </h3>
+            </div>
+
+            <!-- Bloque PLEGABLE -->
+            <div id="datos_generales_block" class="collapse show mt-2">
+              <group col="1" colspan="2">
+                <!-- Campo EDITABLE del título (encima de Cuenta) -->
+                <field name="title" string="Título de la oportunidad de venta"/>
+
+                <field name="partner_id" string="Cuenta"/>
+                <field name="nota" string="Descripción de trato" nolabel="0"/>
+                <field name="importe_solicitado" string="Valor de trato"/>
+                <field name="contacto_primario_id" string="Contacto primario"
+                       domain="[('parent_id','=',partner_id)]"/>
+                <field name="propietario_trato_id" string="Propietario de trato"/>
+                <field name="fecha_cierre_prevista" string="Fecha de cierre prevista"/>
+                <field name="revisor_id" string="Revisor"/>
+                <field name="fecha_firma_colaboracion" string="Fecha firma colaboración"/>
+                <field name="url_drive" string="URL Drive" widget="url"/>
+                <field name="enlace_colaborador" string="Enlace Colaborador" widget="url"/>
+                <field name="fecha_trato_perdido" string="Fecha trato perdido"/>
+                <field name="nombre_subvencion" string="Nombre de la subvención"/>
+                <field name="proveedor_id" string="Proveedor"/>
+                <field name="deal_padre_id" string="Deal padre"/>
+                <field name="info_acuerdos" string="Información acuerdos"/>
+                <field name="punto_solicitud" string="Punto Solicitud"/>
+              </group>
+            </div>
+          </div>
+
+          <!-- Pestañas adicionales -->
           <notebook>
-            <page string="Información">
-              <group>
-                <field name="organismo"/>
-                <field name="convocatoria"/>
-                <field name="nombre_subvencion"/>
-                <field name="punto_solicitud"/>
-                <field name="url_drive"/>
-                <field name="enlace_colaborador"/>
+            <page string="Fechas e importes">
+              <group col="2">
+                <field name="importe_concedido"/>
+                <field name="fecha_solicitud"/>
+                <field name="fecha_resolucion"/>
+                <field name="fecha_justificacion"/>
+                <field name="fecha_limite_justificacion"/>
               </group>
             </page>
-            <page string="Descripción">
-              <field name="nota" nolabel="1"/>
+            <page string="Metadatos">
+              <group col="2">
+                <field name="organismo"/>
+                <field name="convocatoria"/>
+              </group>
             </page>
           </notebook>
+
         </sheet>
       </form>
     </field>
   </record>
 
-  <!-- ACCIÓN (kanban,list,form) -->
+  <!-- ================
+       ACCIÓN
+       ================ -->
   <record id="action_orbalia_project" model="ir.actions.act_window">
     <field name="name">Subvenciones</field>
     <field name="res_model">orbalia.project</field>
@@ -106,7 +148,7 @@
       [ref('orbalia_project_list'), 'list'],
       [ref('orbalia_project_form'), 'form']
     ]"/>
-    <field name="domain">[('grant_call_id', '=', context.get('active_id'))]</field>
+    <field name="domain">[]</field>
     <field name="context">
       {
         "default_grant_call_id": context.get("active_id"),
@@ -115,7 +157,7 @@
     </field>
   </record>
 
-  <!-- MENÚ (si no quieres menú, elimina todo este bloque) -->
+  <!-- Menú (opcional) -->
   <menuitem id="menu_orbalia_projects"
             name="Subvenciones"
             parent="base.menu_administration"

@@ -1,0 +1,10 @@
+/* Chevron rotatorio para el encabezado plegable de “Detalles generales” */
+a.o-orbalia-toggle .fa-chevron-down {
+  transition: transform .15s ease-in-out;
+  transform: rotate(0deg);
+}
+
+/* Bootstrap añade .collapsed al <a> cuando el bloque está cerrado */
+a.o-orbalia-toggle.collapsed .fa-chevron-down {
+  transform: rotate(-90deg);
+}

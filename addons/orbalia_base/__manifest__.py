@@ -22,6 +22,11 @@
         'views/project_kanban.xml',
         'views/res_partner_views.xml',
     ],
+        'assets': {
+        'web.assets_backend': [
+            'orbalia_base/static/src/css/project_form.css',
+        ],
+    },
     'installable': True,
     'application': True,
 }
