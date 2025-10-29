@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-  <!-- Kanban: agrupar por Many2one para mostrar todas las columnas -->
+  <!-- Kanban: agrupar por etapa (state_stage_id) -->
   <record id="view_grant_call_kanban" model="ir.ui.view">
     <field name="name">orbalia.grant.call.kanban</field>
     <field name="model">orbalia.grant.call</field>
     <field name="arch" type="xml">
       <kanban default_group_by="state_stage_id" class="o_kanban_small_column">
+        <!-- Declaración de campos disponibles para el template -->
         <field name="name"/>
         <field name="organismo"/>
         <field name="anio"/>
         <field name="estado"/>
         <field name="state_stage_id"/>
         <field name="project_count"/>
-        
-        <group class="pb-4">
-          <field name="ccaa"/>
-        </group>
+        <field name="ccaa"/>
+
         <templates>
           <t t-name="kanban-box">
             <div class="o_kanban_record oe_kanban_global_click">
@@ -33,9 +32,12 @@
               <div class="o_kanban_content mt-2">
                 <!-- CCAA primero -->
                 <t t-if="record.ccaa.value">
-                  <span class="me-3"><i class="fa fa-map-marker me-1"/> <t t-esc="record.ccaa.value"/></span>
-                  </t>
-                  <span>Expedientes: <t t-esc="record.project_count.value"/></span>
+                  <span class="me-3">
+                    <i class="fa fa-map-marker me-1"/>
+                    <t t-esc="record.ccaa.value"/>
+                  </span>
+                </t>
+                <span>Expedientes: <t t-esc="record.project_count.value"/></span>
               </div>
 
               <div class="oe_kanban_bottom_right mt-2">
@@ -67,20 +69,55 @@
     </field>
   </record>
 
-  <!-- Búsqueda (filtros y agrupación) -->
+  <!-- Búsqueda: filtro por CCAA + botones de filtrado rápido + agrupación -->
   <record id="view_grant_call_search" model="ir.ui.view">
     <field name="name">orbalia.grant.call.search</field>
     <field name="model">orbalia.grant.call</field>
+    <field name="priority">90</field>
     <field name="arch" type="xml">
       <search string="Buscar Subvenciones">
+
+        <!-- Campos para búsqueda libre -->
         <field name="name" string="Nombre"/>
         <field name="organismo"/>
         <field name="anio"/>
         <field name="estado"/>
-        <field name="ccaa" string="Comunidad Autónoma"/>
+
+        <!-- Desplegable genérico -->
+        <field name="ccaa" string="Comunidad Autónoma"
+               filter_domain="[('ccaa', '=', self)]"/>
+
         <separator/>
-        <filter string="Agrupar por Estado" name="group_by_state_stage" context="{'group_by':'state_stage_id'}"/>
-        <filter string="Agrupar por CCAA"  name="group_by_ccaa" context="{'group_by':'ccaa'}"/>
+
+        <!-- Botones de filtro rápido por CCAA -->
+        <group string="Filtrar por Comunidad Autónoma" expand="0">
+          <filter string="Andalucía"            name="ccaa_and" domain="[('ccaa','=','AND')]"/>
+          <filter string="Aragón"               name="ccaa_ara" domain="[('ccaa','=','ARA')]"/>
+          <filter string="Asturias"             name="ccaa_ast" domain="[('ccaa','=','AST')]"/>
+          <filter string="Illes Balears"        name="ccaa_bal" domain="[('ccaa','=','BAL')]"/>
+          <filter string="Canarias"             name="ccaa_can" domain="[('ccaa','=','CAN')]"/>
+          <filter string="Cantabria"            name="ccaa_cnt" domain="[('ccaa','=','CNT')]"/>
+          <filter string="Castilla-La Mancha"   name="ccaa_clm" domain="[('ccaa','=','CLM')]"/>
+          <filter string="Castilla y León"      name="ccaa_cyl" domain="[('ccaa','=','CYL')]"/>
+          <filter string="Cataluña"             name="ccaa_cat" domain="[('ccaa','=','CAT')]"/>
+          <filter string="C. Valenciana"        name="ccaa_val" domain="[('ccaa','=','VAL')]"/>
+          <filter string="Extremadura"          name="ccaa_ext" domain="[('ccaa','=','EXT')]"/>
+          <filter string="Galicia"              name="ccaa_gal" domain="[('ccaa','=','GAL')]"/>
+          <filter string="La Rioja"             name="ccaa_rio" domain="[('ccaa','=','RIO')]"/>
+          <filter string="Madrid"               name="ccaa_mad" domain="[('ccaa','=','MAD')]"/>
+          <filter string="Murcia"               name="ccaa_mur" domain="[('ccaa','=','MUR')]"/>
+          <filter string="Navarra"              name="ccaa_nav" domain="[('ccaa','=','NAV')]"/>
+          <filter string="País Vasco"           name="ccaa_pv"  domain="[('ccaa','=','PV')]"/>
+          <filter string="Ceuta"                name="ccaa_ceu" domain="[('ccaa','=','CEU')]"/>
+          <filter string="Melilla"              name="ccaa_mel" domain="[('ccaa','=','MEL')]"/>
+        </group>
+
+        <separator/>
+
+        <!-- Agrupar por Estado (columnas del kanban) -->
+        <filter string="Agrupar por Estado" name="group_by_state_stage"
+                context="{'group_by':'state_stage_id'}"/>
+
       </search>
     </field>
   </record>
@@ -105,7 +142,6 @@
             <field name="organismo"/>
             <field name="anio"/>
             <field name="estado"/>
-            <!-- NUEVO: CCAA visible en la ficha -->
             <field name="ccaa" string="Comunidad Autónoma"/>
             <field name="fecha_publicacion"/>
             <field name="fecha_limite"/>
@@ -116,7 +152,7 @@
     </field>
   </record>
 
-  <!-- Acción sin domain restrictivo -->
+  <!-- Acción principal -->
   <record id="action_grant_call" model="ir.actions.act_window">
     <field name="name">Subvenciones</field>
     <field name="res_model">orbalia.grant.call</field>
@@ -124,6 +160,7 @@
     <field name="context">{}</field>
   </record>
 
+  <!-- Menú -->
   <menuitem id="menu_orbalia_root" name="Orbalia" sequence="10"/>
   <menuitem id="menu_orbalia_grant_calls" name="Subvenciones"
             parent="menu_orbalia_root" action="action_grant_call" sequence="5"/>
