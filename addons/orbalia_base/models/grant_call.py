@@ -3,6 +3,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 from ast import literal_eval
 
+
 class OrbaliaGrantCall(models.Model):
     _name = "orbalia.grant.call"
     _description = "Subvención / Convocatoria"
@@ -20,7 +21,7 @@ class OrbaliaGrantCall(models.Model):
         ('archivada', 'Archivada'),
     ], string="Estado", default='abierta', index=True)
 
-    # NUEVO: Comunidad Autónoma (desplegable simple)
+    # Comunidad Autónoma (desplegable simple)
     ccaa = fields.Selection(selection=[
         ('AND', 'Andalucía'),
         ('ARA', 'Aragón'),
@@ -43,7 +44,7 @@ class OrbaliaGrantCall(models.Model):
         ('MEL', 'Ciudad Autónoma de Melilla'),
     ], string="Comunidad Autónoma", index=True)
 
-    # NUEVO: etapa Kanban (para ver TODAS las columnas)
+    # Etapa Kanban (sincronizada con "estado")
     state_stage_id = fields.Many2one(
         'orbalia.grant.state',
         string='Estado',
@@ -66,6 +67,9 @@ class OrbaliaGrantCall(models.Model):
     project_ids = fields.One2many("orbalia.project", "grant_call_id", string="Expedientes")
     project_count = fields.Integer(compute="_compute_project_count", string="Nº expedientes")
 
+    # ----------------------------------------------------------
+    # Cómputos
+    # ----------------------------------------------------------
     @api.depends('project_ids')
     def _compute_project_count(self):
         for rec in self:
@@ -74,10 +78,12 @@ class OrbaliaGrantCall(models.Model):
     # --- Sincronización estado <-> etapa Kanban ---
     @api.depends('estado')
     def _compute_state_stage(self):
+        """Asigna la etapa coincidente con el código del estado; si no existe, deja vacío
+        (create/write se encargan de asegurar valor y de validar)."""
         State = self.env['orbalia.grant.state'].sudo()
         cache = {s.code: s.id for s in State.search([])}
         for rec in self:
-            rec.state_stage_id = cache.get(rec.estado)
+            rec.state_stage_id = cache.get(rec.estado) or False
 
     def _inverse_state_stage(self):
         for rec in self:
@@ -88,7 +94,42 @@ class OrbaliaGrantCall(models.Model):
     def _group_expand_state_stage(self, stages, domain, order=None):
         return self.env['orbalia.grant.state'].search([('active', '=', True)], order='sequence, id')
 
-    # --- Acción: abrir expedientes de esta subvención ---
+    # ----------------------------------------------------------
+    # Robustez: garantizar state_stage_id en create/write
+    # ----------------------------------------------------------
+    def _stage_by_code(self, code):
+        return self.env['orbalia.grant.state'].sudo().search([('code', '=', code)], limit=1)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            # Estado por defecto coherente con Selection
+            estado = vals.get('estado') or 'abierta'
+            stage = self._stage_by_code(estado)
+            if not stage:
+                raise ValidationError(_(
+                    "No existe una etapa en 'Etapas de subvenciones' con código '%s'. "
+                    "Cree/active las etapas maestras con los códigos: borrador, abierta, cerrada, resuelta, archivada."
+                ) % estado)
+            # Forzar valor requerido antes del guardado
+            vals['state_stage_id'] = stage.id
+        return super().create(vals_list)
+
+    def write(self, vals):
+        # Si cambia el estado y no se ha informado explícitamente la etapa, sincronizarla
+        if 'estado' in vals and 'state_stage_id' not in vals:
+            stage = self._stage_by_code(vals['estado'])
+            if not stage:
+                raise ValidationError(_(
+                    "No existe una etapa en 'Etapas de subvenciones' con código '%s'. "
+                    "Revise la configuración de etapas."
+                ) % vals['estado'])
+            vals['state_stage_id'] = stage.id
+        return super().write(vals)
+
+    # ----------------------------------------------------------
+    # Acción: abrir expedientes de esta subvención
+    # ----------------------------------------------------------
     def action_open_projects_kanban(self):
         self.ensure_one()
         act = self.env.ref('orbalia_base.action_orbalia_project', raise_if_not_found=False)
@@ -104,17 +145,24 @@ class OrbaliaGrantCall(models.Model):
                 raw_ctx = literal_eval(raw_ctx)
             except Exception:
                 raw_ctx = {}
-        raw_ctx.update({'default_grant_call_id': self.id, 'search_default_group_by_stage': 1, 'default_stage_id': False})
+        raw_ctx.update({
+            'default_grant_call_id': self.id,
+            'search_default_group_by_stage': 1,
+            'default_stage_id': False
+        })
         action['context'] = raw_ctx
         action['domain'] = [('grant_call_id', '=', self.id)]
         action['name'] = _("Expedientes · %s") % (self.display_name,)
         action['view_mode'] = action.get('view_mode') or 'kanban,tree,form'
         return action
 
-    # --- Protección de borrado ---
+    # ----------------------------------------------------------
+    # Protección de borrado
+    # ----------------------------------------------------------
     def unlink(self):
         for rec in self:
             if rec.project_ids:
-                raise ValidationError(_("No se puede eliminar la subvención '%s' porque tiene %d expedientes asociados.")
-                                      % (rec.display_name, len(rec.project_ids)))
+                raise ValidationError(_(
+                    "No se puede eliminar la subvención '%s' porque tiene %d expedientes asociados."
+                ) % (rec.display_name, len(rec.project_ids)))
         return super().unlink()
