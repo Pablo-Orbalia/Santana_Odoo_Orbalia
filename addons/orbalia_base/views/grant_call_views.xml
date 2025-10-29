@@ -13,6 +13,10 @@
         <field name="estado"/>
         <field name="state_stage_id"/>
         <field name="project_count"/>
+        
+        <group class="pb-4">
+          <field name="ccaa"/>
+        </group>
 
         <templates>
           <t t-name="kanban-box">
@@ -30,6 +34,9 @@
               <div class="o_kanban_content mt-2">
                 <span class="badge"><t t-esc="record.estado.value"/></span>
                 <span class="ms-2">Expedientes: <t t-esc="record.project_count.value"/></span>
+                <t t-if="record.ccaa.value">
+                  <span class="ms-2"><i class="fa fa-map-marker me-1"/> <t t-esc="record.ccaa.value"/></span>
+                </t>
               </div>
 
               <div class="oe_kanban_bottom_right mt-2">
@@ -45,7 +52,7 @@
     </field>
   </record>
 
-  <!-- Lista (opcional) -->
+  <!-- Lista -->
   <record id="view_grant_call_list" model="ir.ui.view">
     <field name="name">orbalia.grant.call.list</field>
     <field name="model">orbalia.grant.call</field>
@@ -55,12 +62,31 @@
         <field name="organismo"/>
         <field name="anio"/>
         <field name="estado"/>
+        <field name="ccaa" string="CCAA"/>
         <field name="project_count" string="Expedientes"/>
       </list>
     </field>
   </record>
 
-  <!-- Formulario (igual que tenías) -->
+  <!-- Búsqueda (filtros y agrupación) -->
+  <record id="view_grant_call_search" model="ir.ui.view">
+    <field name="name">orbalia.grant.call.search</field>
+    <field name="model">orbalia.grant.call</field>
+    <field name="arch" type="xml">
+      <search string="Buscar Subvenciones">
+        <field name="name" string="Nombre"/>
+        <field name="organismo"/>
+        <field name="anio"/>
+        <field name="estado"/>
+        <field name="ccaa" string="Comunidad Autónoma"/>
+        <separator/>
+        <filter string="Agrupar por Estado" name="group_by_state_stage" context="{'group_by':'state_stage_id'}"/>
+        <filter string="Agrupar por CCAA"  name="group_by_ccaa" context="{'group_by':'ccaa'}"/>
+      </search>
+    </field>
+  </record>
+
+  <!-- Formulario -->
   <record id="view_grant_call_form" model="ir.ui.view">
     <field name="name">orbalia.grant.call.form</field>
     <field name="model">orbalia.grant.call</field>
@@ -80,6 +106,8 @@
             <field name="organismo"/>
             <field name="anio"/>
             <field name="estado"/>
+            <!-- NUEVO: CCAA visible en la ficha -->
+            <field name="ccaa" string="Comunidad Autónoma"/>
             <field name="fecha_publicacion"/>
             <field name="fecha_limite"/>
             <field name="notas" colspan="2"/>

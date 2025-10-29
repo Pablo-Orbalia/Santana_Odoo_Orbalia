@@ -20,6 +20,29 @@ class OrbaliaGrantCall(models.Model):
         ('archivada', 'Archivada'),
     ], string="Estado", default='abierta', index=True)
 
+    # NUEVO: Comunidad Autónoma (desplegable simple)
+    ccaa = fields.Selection(selection=[
+        ('AND', 'Andalucía'),
+        ('ARA', 'Aragón'),
+        ('AST', 'Principado de Asturias'),
+        ('BAL', 'Illes Balears'),
+        ('CAN', 'Canarias'),
+        ('CNT', 'Cantabria'),
+        ('CLM', 'Castilla-La Mancha'),
+        ('CYL', 'Castilla y León'),
+        ('CAT', 'Cataluña'),
+        ('VAL', 'Comunitat Valenciana'),
+        ('EXT', 'Extremadura'),
+        ('GAL', 'Galicia'),
+        ('RIO', 'La Rioja'),
+        ('MAD', 'Comunidad de Madrid'),
+        ('MUR', 'Región de Murcia'),
+        ('NAV', 'Comunidad Foral de Navarra'),
+        ('PV',  'País Vasco'),
+        ('CEU', 'Ciudad Autónoma de Ceuta'),
+        ('MEL', 'Ciudad Autónoma de Melilla'),
+    ], string="Comunidad Autónoma", index=True)
+
     # NUEVO: etapa Kanban (para ver TODAS las columnas)
     state_stage_id = fields.Many2one(
         'orbalia.grant.state',
