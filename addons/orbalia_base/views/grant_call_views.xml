@@ -17,7 +17,6 @@
         <group class="pb-4">
           <field name="ccaa"/>
         </group>
-
         <templates>
           <t t-name="kanban-box">
             <div class="o_kanban_record oe_kanban_global_click">
@@ -32,11 +31,11 @@
               </div>
 
               <div class="o_kanban_content mt-2">
-                <span class="badge"><t t-esc="record.estado.value"/></span>
-                <span class="ms-2">Expedientes: <t t-esc="record.project_count.value"/></span>
+                <!-- CCAA primero -->
                 <t t-if="record.ccaa.value">
-                  <span class="ms-2"><i class="fa fa-map-marker me-1"/> <t t-esc="record.ccaa.value"/></span>
-                </t>
+                  <span class="me-3"><i class="fa fa-map-marker me-1"/> <t t-esc="record.ccaa.value"/></span>
+                  </t>
+                  <span>Expedientes: <t t-esc="record.project_count.value"/></span>
               </div>
 
               <div class="oe_kanban_bottom_right mt-2">
