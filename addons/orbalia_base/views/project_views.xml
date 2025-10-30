@@ -59,6 +59,8 @@
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
+
+    
       <form string="Subvención" class="o_chatter_position_sided">
         <sheet>
 
@@ -109,23 +111,6 @@
                   <field name="info_acuerdos" string="Información acuerdos"/>
                   <field name="punto_solicitud" string="Punto Solicitud"/>
                 </group>
-
-                <!-- Columna derecha: Trazabilidad y auditoría -->
-                <group string="Trazabilidad y auditoría">
-                  <field name="create_uid" readonly="1"/>
-                  <field name="create_date" readonly="1"/>
-                  <field name="write_uid" readonly="1"/>
-                  <field name="write_date" readonly="1"/>
-
-                  <separator string="Último cambio de etapa"/>
-                  <field name="last_stage_user_id" readonly="1"/>
-                  <field name="last_stage_date" readonly="1"/>
-
-                  <separator string="Última modificación"/>
-                  <field name="last_change_user_id" readonly="1"/>
-                  <field name="last_change_date" readonly="1"/>
-                </group>
-
               </group>
             </div>
           </div>
