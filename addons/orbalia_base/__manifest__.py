@@ -4,7 +4,7 @@
     'summary': 'Base de Orbalia (subvenciones con etapas configurables)',
     'category': 'Tools',
     'license': 'LGPL-3',
-    'depends': ['base', 'mail', 'project'],
+    'depends': ['base', 'mail', 'project','contacts'],
     'data': [
         'security/ir.model.access.csv',
 

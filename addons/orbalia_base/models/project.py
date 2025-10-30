@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError  # por si lo usas en otras partes
 
 class OrbaliaProject(models.Model):
     _name = "orbalia.project"
     _description = "Subvención"
     _order = "create_date desc"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     # -----------------------
     # CAMPOS PRINCIPALES
@@ -67,7 +69,10 @@ class OrbaliaProject(models.Model):
         required=True,
         group_expand="_group_expand_stage_id",
         ondelete="restrict",
+        tracking=True,  # <-- opcional
     )
+    title = fields.Char(string="Título de la oportunidad de venta", required=True, tracking=True)
+    partner_id = fields.Many2one("res.partner", string="Cuenta", tracking=True)
 
     # Display auxiliar
     etapa_display = fields.Char(
@@ -100,6 +105,15 @@ class OrbaliaProject(models.Model):
     deal_padre_id = fields.Many2one("orbalia.project", string="Deal padre")
     info_acuerdos = fields.Text(string="Información acuerdos")
     punto_solicitud = fields.Char(string="Punto Solicitud")
+
+    # -----------------------
+    # TRAZABILIDAD / AUDITORÍA (panel derecho)
+    # -----------------------
+    last_stage_user_id = fields.Many2one('res.users', string="Usuario del último cambio de etapa", readonly=True)
+    last_stage_date = fields.Datetime(string="Fecha último cambio de etapa", readonly=True)
+
+    last_change_user_id = fields.Many2one('res.users', string="Último usuario que modificó", readonly=True)
+    last_change_date = fields.Datetime(string="Fecha última modificación", readonly=True)
 
     # -----------------------
     # ACCIONES DE CAMBIO DE ESTADO
@@ -141,8 +155,6 @@ class OrbaliaProject(models.Model):
     def _group_expand_stage_id(self, stages, domain, order=None):
         """
         Devuelve SOLO las etapas de la(s) convocatoria(s) visibles y en orden estable.
-        - Detección robusta de grant_call_id desde domain y contexto (incluye active_id/active_ids).
-        - Orden estable por grant_call_id, sequence, id para evitar "baile" si hay varias convocatorias.
         """
         gc_ids = set()
 
@@ -177,3 +189,38 @@ class OrbaliaProject(models.Model):
     def _compute_etapa_display(self):
         for record in self:
             record.etapa_display = f"Etapa: {record.stage_id.name or ''}"
+
+    # -----------------------
+    # OVERRIDES PARA TRAZABILIDAD
+    # -----------------------
+    @api.model
+    def create(self, vals):
+        # Inicializamos trazabilidad en creación
+        now = fields.Datetime.now()
+        vals.setdefault('last_change_user_id', self.env.user.id)
+        vals.setdefault('last_change_date', now)
+        # Si viene etapa en la creación, registramos también trazabilidad de etapa
+        if vals.get('stage_id'):
+            vals.setdefault('last_stage_user_id', self.env.user.id)
+            vals.setdefault('last_stage_date', now)
+        record = super().create(vals)
+        return record
+
+    def write(self, vals):
+        """
+        Actualiza:
+          - last_stage_user_id / last_stage_date si cambia la etapa.
+          - last_change_user_id / last_change_date ante cualquier modificación real.
+        """
+        now = fields.Datetime.now()
+        stage_changed = 'stage_id' in vals and vals.get('stage_id') is not None
+
+        # Siempre que se escribe, hay modificación: registramos usuario/fecha.
+        vals.setdefault('last_change_user_id', self.env.user.id)
+        vals.setdefault('last_change_date', now)
+
+        if stage_changed:
+            vals.setdefault('last_stage_user_id', self.env.user.id)
+            vals.setdefault('last_stage_date', now)
+
+        return super().write(vals)

@@ -8,8 +8,7 @@
     <field name="name">orbalia.project.kanban</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
-      <kanban class="o_kanban_small_column o_kanban_grouped"
-              default_group_by="stage_id">
+      <kanban class="o_kanban_small_column o_kanban_grouped" default_group_by="stage_id">
         <field name="title"/>
         <field name="partner_id"/>
         <field name="stage_id"/>
@@ -44,8 +43,8 @@
         <field name="title"/>
         <field name="partner_id"/>
         <field name="grant_call_id" string="Subvención"/>
-        <field name="stage_id"     string="Etapa"/>
-        <field name="state"        string="Estado"/>
+        <field name="stage_id" string="Etapa"/>
+        <field name="state" string="Estado"/>
         <field name="importe_solicitado" string="Valor de trato"/>
         <field name="importe_concedido"/>
         <field name="fecha_solicitud"/>
@@ -54,65 +53,84 @@
   </record>
 
   <!-- ================
-       VISTA FORMULARIO (UNA COLUMNA)
+       VISTA FORMULARIO (con chatter lateral)
        ================ -->
   <record id="orbalia_project_form" model="ir.ui.view">
     <field name="name">orbalia.project.form</field>
     <field name="model">orbalia.project</field>
     <field name="arch" type="xml">
-      <form string="Subvención">
+      <form string="Subvención" class="o_chatter_position_sided">
         <sheet>
 
-          <!-- Cabecera: copia NO editable del título -->
+          <!-- Cabecera -->
           <div class="oe_title">
             <label for="title" string="Título de la oportunidad de venta"/>
             <h1><field name="title" readonly="1"/></h1>
           </div>
 
-          <!-- Encabezado plegable (sin JS adicional) -->
+          <!-- Bloque plegable -->
           <div class="o_form_sheet_bg">
             <div class="o_inner_group mt16 mb8">
               <h3>
                 <a href="#"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#datos_generales_block"
-                  aria-expanded="true"
-                  aria-controls="datos_generales_block"
-                  class="o-orbalia-toggle text-decoration-none text-dark">
+                   data-bs-toggle="collapse"
+                   data-bs-target="#datos_generales_block"
+                   aria-expanded="true"
+                   aria-controls="datos_generales_block"
+                   class="o-orbalia-toggle text-decoration-none text-dark">
                   <i class="fa fa-chevron-down me-2"></i>
                   <span class="fw-bold">Detalles generales</span>
                 </a>
               </h3>
             </div>
 
-            <!-- Bloque PLEGABLE -->
             <div id="datos_generales_block" class="collapse show mt-2">
-              <group col="1" colspan="2">
-                <!-- Campo EDITABLE del título (encima de Cuenta) -->
-                <field name="title" string="Título de la oportunidad de venta"/>
+              <!-- Dos columnas: izquierda datos, derecha trazabilidad -->
+              <group col="2" colspan="2">
 
-                <field name="partner_id" string="Cuenta"/>
-                <field name="nota" string="Descripción de trato" nolabel="0"/>
-                <field name="importe_solicitado" string="Valor de trato"/>
-                <field name="contacto_primario_id" string="Contacto primario"
-                       domain="[('parent_id','=',partner_id)]"/>
-                <field name="propietario_trato_id" string="Propietario de trato"/>
-                <field name="fecha_cierre_prevista" string="Fecha de cierre prevista"/>
-                <field name="revisor_id" string="Revisor"/>
-                <field name="fecha_firma_colaboracion" string="Fecha firma colaboración"/>
-                <field name="url_drive" string="URL Drive" widget="url"/>
-                <field name="enlace_colaborador" string="Enlace Colaborador" widget="url"/>
-                <field name="fecha_trato_perdido" string="Fecha trato perdido"/>
-                <field name="nombre_subvencion" string="Nombre de la subvención"/>
-                <field name="proveedor_id" string="Proveedor"/>
-                <field name="deal_padre_id" string="Deal padre"/>
-                <field name="info_acuerdos" string="Información acuerdos"/>
-                <field name="punto_solicitud" string="Punto Solicitud"/>
+                <!-- Columna izquierda -->
+                <group>
+                  <field name="title" string="Título de la oportunidad de venta"/>
+                  <field name="partner_id" string="Cuenta"/>
+                  <field name="nota" string="Descripción de trato" nolabel="0"/>
+                  <field name="importe_solicitado" string="Valor de trato"/>
+                  <field name="contacto_primario_id" string="Contacto primario"
+                         domain="[('parent_id','=',partner_id)]"/>
+                  <field name="propietario_trato_id" string="Propietario de trato"/>
+                  <field name="fecha_cierre_prevista" string="Fecha de cierre prevista"/>
+                  <field name="revisor_id" string="Revisor"/>
+                  <field name="fecha_firma_colaboracion" string="Fecha firma colaboración"/>
+                  <field name="url_drive" string="URL Drive" widget="url"/>
+                  <field name="enlace_colaborador" string="Enlace Colaborador" widget="url"/>
+                  <field name="fecha_trato_perdido" string="Fecha trato perdido"/>
+                  <field name="nombre_subvencion" string="Nombre de la subvención"/>
+                  <field name="proveedor_id" string="Proveedor"/>
+                  <field name="deal_padre_id" string="Deal padre"/>
+                  <field name="info_acuerdos" string="Información acuerdos"/>
+                  <field name="punto_solicitud" string="Punto Solicitud"/>
+                </group>
+
+                <!-- Columna derecha: Trazabilidad y auditoría -->
+                <group string="Trazabilidad y auditoría">
+                  <field name="create_uid" readonly="1"/>
+                  <field name="create_date" readonly="1"/>
+                  <field name="write_uid" readonly="1"/>
+                  <field name="write_date" readonly="1"/>
+
+                  <separator string="Último cambio de etapa"/>
+                  <field name="last_stage_user_id" readonly="1"/>
+                  <field name="last_stage_date" readonly="1"/>
+
+                  <separator string="Última modificación"/>
+                  <field name="last_change_user_id" readonly="1"/>
+                  <field name="last_change_date" readonly="1"/>
+                </group>
+
               </group>
             </div>
           </div>
 
-          <!-- Pestañas adicionales -->
+          <!-- Pestañas -->
           <notebook>
             <page string="Fechas e importes">
               <group col="2">
@@ -132,6 +150,10 @@
           </notebook>
 
         </sheet>
+
+        <!-- Chatter (Odoo 18): fuera del <sheet> para columna derecha -->
+        <chatter followers="true" activities="true" messages="true"/>
+
       </form>
     </field>
   </record>
